@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
-
-const MONGODB_URI: string = process.env.MONGODB_URI;
+const MONGODB_URI: string = process.env.MONGODB_URI || '';
 
 /**
  * Global is used here to maintain a cached connection across hot reloads in development.
@@ -31,6 +27,10 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   }
 
   if (!cached.promise) {
+    const uri = process.env.MONGODB_URI || MONGODB_URI;
+    if (!uri) {
+      throw new Error('Please define the MONGODB_URI environment variable');
+    }
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10,
@@ -38,7 +38,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
       connectTimeoutMS: 5000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(uri, opts).then((mongooseInstance) => {
       console.log('✅ Connected to MongoDB Atlas (shajgoj_store)');
       return mongooseInstance;
     });
