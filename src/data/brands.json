@@ -1,0 +1,164 @@
+[
+  {
+    "id": "the-ordinary",
+    "name": "The Ordinary",
+    "slug": "the-ordinary",
+    "is_top": true
+  },
+  {
+    "id": "skin-cafe",
+    "name": "Skin Cafe",
+    "slug": "skin-cafe",
+    "is_top": true
+  },
+  {
+    "id": "cosrx",
+    "name": "COSRX",
+    "slug": "cosrx",
+    "is_top": true
+  },
+  {
+    "id": "cerave",
+    "name": "CeraVe",
+    "slug": "cerave",
+    "is_top": true
+  },
+  {
+    "id": "neutrogena",
+    "name": "Neutrogena",
+    "slug": "neutrogena",
+    "is_top": true
+  },
+  {
+    "id": "maybelline",
+    "name": "Maybelline New York",
+    "slug": "maybelline",
+    "is_top": true
+  },
+  {
+    "id": "loreal",
+    "name": "L'Oréal Paris",
+    "slug": "loreal",
+    "is_top": true
+  },
+  {
+    "id": "wet-n-wild",
+    "name": "Wet n Wild",
+    "slug": "wet-n-wild",
+    "is_top": true
+  },
+  {
+    "id": "revolution",
+    "name": "Makeup Revolution",
+    "slug": "revolution",
+    "is_top": true
+  },
+  {
+    "id": "tresemme",
+    "name": "TRESemmé",
+    "slug": "tresemme",
+    "is_top": true
+  },
+  {
+    "id": "dove",
+    "name": "Dove",
+    "slug": "dove",
+    "is_top": true
+  },
+  {
+    "id": "sunsilk",
+    "name": "Sunsilk",
+    "slug": "sunsilk",
+    "is_top": true
+  },
+  {
+    "id": "beauty-of-joseon",
+    "name": "Beauty of Joseon",
+    "slug": "beauty-of-joseon",
+    "is_top": true
+  },
+  {
+    "id": "some-by-mi",
+    "name": "Some By Mi",
+    "slug": "some-by-mi",
+    "is_top": true
+  },
+  {
+    "id": "innisfree",
+    "name": "Innisfree",
+    "slug": "innisfree",
+    "is_top": true
+  },
+  {
+    "id": "nivea",
+    "name": "Nivea",
+    "slug": "nivea",
+    "is_top": true
+  },
+  {
+    "id": "vaseline",
+    "name": "Vaseline",
+    "slug": "vaseline",
+    "is_top": true
+  },
+  {
+    "id": "bath-and-body-works",
+    "name": "Bath & Body Works",
+    "slug": "bath-and-body-works",
+    "is_top": true
+  },
+  {
+    "id": "victorias-secret",
+    "name": "Victoria's Secret",
+    "slug": "victorias-secret",
+    "is_top": true
+  },
+  {
+    "id": "sebamed",
+    "name": "Sebamed",
+    "slug": "sebamed",
+    "is_top": true
+  },
+  {
+    "id": "aveeno",
+    "name": "Aveeno",
+    "slug": "aveeno",
+    "is_top": true
+  },
+  {
+    "id": "enamor",
+    "name": "Enamor",
+    "slug": "enamor",
+    "is_top": true
+  },
+  {
+    "id": "triumph",
+    "name": "Triumph",
+    "slug": "triumph",
+    "is_top": true
+  },
+  {
+    "id": "cetaphil",
+    "name": "Cetaphil",
+    "slug": "cetaphil",
+    "is_top": true
+  },
+  {
+    "id": "rajkonna",
+    "name": "Rajkonna",
+    "slug": "rajkonna",
+    "is_top": true
+  },
+  {
+    "id": "lafz",
+    "name": "Lafz",
+    "slug": "lafz",
+    "is_top": true
+  },
+  {
+    "id": "simple",
+    "name": "Simple",
+    "slug": "simple",
+    "is_top": true
+  }
+]

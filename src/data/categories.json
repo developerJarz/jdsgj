@@ -1,0 +1,50 @@
+[
+  {
+    "id": "skin-care",
+    "name": "Skin Care",
+    "slug": "skin-care",
+    "image": "https://images.unsplash.com/photo-1556228720-195a672e8a03?w=500&q=80"
+  },
+  {
+    "id": "makeup",
+    "name": "Makeup",
+    "slug": "makeup",
+    "image": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&q=80"
+  },
+  {
+    "id": "hair",
+    "name": "Hair Care",
+    "slug": "hair",
+    "image": "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=500&q=80"
+  },
+  {
+    "id": "k-beauty",
+    "name": "K-Beauty",
+    "slug": "k-beauty",
+    "image": "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=500&q=80"
+  },
+  {
+    "id": "fragrance",
+    "name": "Fragrance",
+    "slug": "fragrance",
+    "image": "https://images.unsplash.com/photo-1547887537-6158d64c35b3?w=500&q=80"
+  },
+  {
+    "id": "personal-care",
+    "name": "Personal Care",
+    "slug": "personal-care",
+    "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&q=80"
+  },
+  {
+    "id": "mom-and-baby",
+    "name": "Mom & Baby",
+    "slug": "mom-and-baby",
+    "image": "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=500&q=80"
+  },
+  {
+    "id": "undergarments",
+    "name": "Undergarments",
+    "slug": "undergarments",
+    "image": "https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=500&q=80"
+  }
+]

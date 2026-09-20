@@ -1,0 +1,207 @@
+[
+  {
+    "id": "hero-slider",
+    "widget_name": "hero_slider",
+    "title": "Top Offers",
+    "columns": 1,
+    "items": [
+      {
+        "id": 1,
+        "title": "Skintastic Monsoon Specials",
+        "image": "https://bk.shajgoj.com/storage/2026/08/skintastic-2-web.png",
+        "url": "/shop?category=skin",
+        "alt": "Skintastic Deals"
+      },
+      {
+        "id": 2,
+        "title": "Ponds Miracle Care",
+        "image": "https://bk.shajgoj.com/storage/2026/08/prime-banner-ponds-miracle-me-web.png",
+        "url": "/shop?brand=ponds",
+        "alt": "Ponds Miracle"
+      },
+      {
+        "id": 3,
+        "title": "July Jaw Droppers",
+        "image": "https://bk.shajgoj.com/storage/2026/07/july-jaw-droppers-app.png",
+        "url": "/shop?offer=jaw-droppers",
+        "alt": "Jaw Droppers Offers"
+      }
+    ]
+  },
+  {
+    "id": "deals-cannot-miss",
+    "widget_name": "multi_columns",
+    "title": "DEALS YOU CANNOT MISS",
+    "columns": 4,
+    "items": [
+      {
+        "id": 101,
+        "title": "Marico Monsoon Deals",
+        "image": "https://bk.shajgoj.com/storage/2026/09/marico-monsoon-deals-1.png",
+        "url": "/shop?brand=marico"
+      },
+      {
+        "id": 102,
+        "title": "Hair Secrets Unlocked",
+        "image": "https://bk.shajgoj.com/storage/2026/09/hair-secrets-unlocked-1.png",
+        "url": "/shop?category=hair"
+      },
+      {
+        "id": 103,
+        "title": "Mega Square Deals",
+        "image": "https://bk.shajgoj.com/storage/2026/07/shajgoj-banner.png",
+        "url": "/shop?category=square-deals"
+      },
+      {
+        "id": 104,
+        "title": "Jewellery Collection",
+        "image": "https://bk.shajgoj.com/storage/2026/08/shajgoj-jewellery-dycm-banner.png",
+        "url": "/shop?category=jewellery"
+      }
+    ]
+  },
+  {
+    "id": "top-brands-offers",
+    "widget_name": "multi_columns",
+    "title": "TOP BRANDS & OFFERS",
+    "columns": 3,
+    "items": [
+      {
+        "id": 201,
+        "title": "Reckitt Big Brand Day",
+        "image": "https://bk.shajgoj.com/storage/2026/09/1.png",
+        "url": "/shop?brand=reckitt"
+      },
+      {
+        "id": 202,
+        "title": "Chardike Summer Essentials",
+        "image": "https://bk.shajgoj.com/storage/2026/04/shajgoj-banner-for-summer.jpg",
+        "url": "/shop?brand=chardike"
+      },
+      {
+        "id": 203,
+        "title": "Treasures Of Glow",
+        "image": "https://bk.shajgoj.com/storage/2026/04/treasure-of-glow.png",
+        "url": "/shop?collection=glow"
+      },
+      {
+        "id": 204,
+        "title": "The Ordinary",
+        "image": "https://bk.shajgoj.com/storage/2026/05/shajgoj-the-ordinary-top-brand-banner-33.png",
+        "url": "/shop?brand=the-ordinary"
+      },
+      {
+        "id": 205,
+        "title": "Skin Cafe Organic",
+        "image": "https://bk.shajgoj.com/storage/2026/04/skin-cafe-shower-gel-top-brand-banner.gif",
+        "url": "/shop?brand=skin-cafe"
+      },
+      {
+        "id": 206,
+        "title": "Dabur Deals",
+        "image": "https://bk.shajgoj.com/storage/2025/10/dabur-hero-banner.gif",
+        "url": "/shop?brand=dabur"
+      }
+    ]
+  },
+  {
+    "id": "limited-time-offers",
+    "widget_name": "multi_columns",
+    "title": "LIMITED TIME OFFERS",
+    "columns": 4,
+    "items": [
+      {
+        "id": 301,
+        "title": "Buy 1 Get 1 Free",
+        "image": "https://bk.shajgoj.com/storage/2025/05/bogo-9lad.png",
+        "url": "/shop?offer=bogo"
+      },
+      {
+        "id": 302,
+        "title": "Value Combos",
+        "image": "https://bk.shajgoj.com/storage/2025/05/combo.png",
+        "url": "/shop?offer=combo"
+      },
+      {
+        "id": 303,
+        "title": "Special Offers",
+        "image": "https://bk.shajgoj.com/storage/2025/05/offers.png",
+        "url": "/shop?offer=special"
+      },
+      {
+        "id": 304,
+        "title": "Clearance Sale",
+        "image": "https://bk.shajgoj.com/storage/2025/05/clearance-sale.png",
+        "url": "/shop?offer=clearance"
+      }
+    ]
+  },
+  {
+    "id": "shop-by-concerns",
+    "widget_name": "multi_columns",
+    "title": "SHOP BY CONCERN",
+    "columns": 5,
+    "items": [
+      {
+        "id": 401,
+        "title": "Acne Treatment",
+        "image": "https://bk.shajgoj.com/storage/2026/04/acne-treatment.png",
+        "url": "/shop?concern=acne"
+      },
+      {
+        "id": 402,
+        "title": "Anti-Aging",
+        "image": "https://bk.shajgoj.com/storage/2026/04/anti-aging-treatment.png",
+        "url": "/shop?concern=anti-aging"
+      },
+      {
+        "id": 403,
+        "title": "Dandruff Solution",
+        "image": "https://bk.shajgoj.com/storage/2026/04/dandruff-solution.png",
+        "url": "/shop?concern=dandruff"
+      },
+      {
+        "id": 404,
+        "title": "Dry Skin Treatment",
+        "image": "https://bk.shajgoj.com/storage/2026/04/dry-skin-treatment.png",
+        "url": "/shop?concern=dry-skin"
+      },
+      {
+        "id": 405,
+        "title": "Hair Fall Treatment",
+        "image": "https://bk.shajgoj.com/storage/2026/04/hair-fall-treatment.png",
+        "url": "/shop?concern=hair-fall"
+      },
+      {
+        "id": 406,
+        "title": "Oil Control",
+        "image": "https://bk.shajgoj.com/storage/2026/04/oil-control-treatment.png",
+        "url": "/shop?concern=oil-control"
+      },
+      {
+        "id": 407,
+        "title": "Pore Care",
+        "image": "https://bk.shajgoj.com/storage/2026/04/pore-care.png",
+        "url": "/shop?concern=pore-care"
+      },
+      {
+        "id": 408,
+        "title": "Spot Treatment",
+        "image": "https://bk.shajgoj.com/storage/2026/04/spot-treatment.png",
+        "url": "/shop?concern=spot"
+      },
+      {
+        "id": 409,
+        "title": "Hair Thinning",
+        "image": "https://bk.shajgoj.com/storage/2026/04/hair-thinning-solution.png",
+        "url": "/shop?concern=hair-thinning"
+      },
+      {
+        "id": 410,
+        "title": "Sun Burn Care",
+        "image": "https://bk.shajgoj.com/storage/2026/04/sun-burn-treatment.png",
+        "url": "/shop?concern=sun-burn"
+      }
+    ]
+  }
+]
