@@ -84,11 +84,11 @@ export default function Header() {
           <div className="flex items-center gap-6">
             <Link href="/" className="flex items-center flex-shrink-0">
               <Image
-                src="/assets/logov2.png"
+                src="/MainLOGOshajgoj.png"
                 alt="Shajgoj.bd"
-                width={160}
-                height={26}
-                className="h-7 w-auto object-contain"
+                width={180}
+                height={35}
+                className="h-8 w-auto object-contain"
                 priority
               />
             </Link>

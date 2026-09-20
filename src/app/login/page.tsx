@@ -265,11 +265,11 @@ function LoginContent() {
         <div className="text-center space-y-2">
           <Link href="/" className="inline-block transition-transform hover:scale-105">
             <Image
-              src="/assets/logov2.png"
+              src="/MainLOGOshajgoj.png"
               alt="Shajgoj.bd"
-              width={160}
-              height={28}
-              className="h-8 w-auto object-contain mx-auto"
+              width={180}
+              height={35}
+              className="h-9 w-auto object-contain mx-auto"
               priority
             />
           </Link>

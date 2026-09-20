@@ -45,10 +45,10 @@ export default function ModeratorLayout({ children }: { children: React.ReactNod
         <div className="h-16 px-4 border-b border-slate-800 flex items-center justify-between shrink-0">
           <Link href="/moderator" className="flex items-center gap-2">
             <Image
-              src="/assets/logov2.png"
-              alt="Shajgoj.bd Moderator"
-              width={120}
-              height={22}
+              src="/MainLOGOshajgoj.png"
+              alt="Shajgoj.bd Staff"
+              width={130}
+              height={25}
               className="h-6 w-auto object-contain brightness-0 invert"
             />
             <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">

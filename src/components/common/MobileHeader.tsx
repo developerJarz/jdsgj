@@ -49,11 +49,11 @@ export default function MobileHeader() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/assets/logov2.png"
+              src="/MainLOGOshajgoj.png"
               alt="Shajgoj.bd"
-              width={130}
-              height={22}
-              className="h-6 w-auto object-contain"
+              width={140}
+              height={27}
+              className="h-7 w-auto object-contain"
               priority
             />
           </Link>
@@ -121,11 +121,11 @@ export default function MobileHeader() {
             {/* Drawer Header */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white">
               <Image
-                src="/assets/logov2.png"
+                src="/MainLOGOshajgoj.png"
                 alt="Shajgoj.bd"
-                width={120}
-                height={20}
-                className="h-5 w-auto object-contain"
+                width={130}
+                height={25}
+                className="h-6 w-auto object-contain"
               />
               <button
                 type="button"

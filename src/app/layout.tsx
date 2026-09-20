@@ -9,7 +9,12 @@ export const metadata: Metadata = {
   title: "Shajgoj.bd – Buy Authentic Cosmetic and Beauty Products Online in Bangladesh",
   description: "Shop 100% authentic beauty products online in Bangladesh at Shajgoj.bd: makeup, skincare, and haircare from 450+ brands, at the best BDT prices with fast nationwide delivery.",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.png" },
+      { url: "/New Faviconshajgoj.bd final.png" },
+    ],
+    apple: "/favicon.png",
+    shortcut: "/favicon.png",
   },
   openGraph: {
     title: "Shajgoj.bd – Buy Authentic Cosmetic and Beauty Products Online in Bangladesh",

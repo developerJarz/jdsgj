@@ -132,10 +132,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="h-16 px-4 border-b border-slate-700/50 flex items-center justify-between shrink-0">
           <Link href="/admin" className="flex items-center gap-2">
             <Image
-              src="/assets/logov2.png"
+              src="/MainLOGOshajgoj.png"
               alt="Shajgoj.bd Admin"
-              width={120}
-              height={22}
+              width={130}
+              height={25}
               className="h-6 w-auto object-contain brightness-0 invert"
             />
             <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-sg-pink to-[#ff6b8b] text-white text-[10px] font-black uppercase tracking-wider shadow-xs">

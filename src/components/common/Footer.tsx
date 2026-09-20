@@ -58,11 +58,11 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="inline-block">
               <Image
-                src="/assets/logov2.png"
+                src="/MainLOGOshajgoj.png"
                 alt="Shajgoj.bd"
-                width={150}
-                height={26}
-                className="h-7 w-auto object-contain brightness-0 invert"
+                width={160}
+                height={31}
+                className="h-8 w-auto object-contain brightness-0 invert"
               />
             </Link>
             <p className="text-gray-400 text-[11px] leading-relaxed">
