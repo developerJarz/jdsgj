@@ -2,7 +2,7 @@ import React from 'react';
 import { FlameIcon, ZapIcon, SparklesIcon } from '@/components/common/Icons';
 import Link from 'next/link';
 import Image from 'next/image';
-import { apiClient } from '@/services/apiClient';
+import { getServerProducts, getServerCategories, getServerBanners } from '@/lib/serverData';
 import HeroSlider from '@/components/home/HeroSlider';
 import DealsSection from '@/components/home/DealsSection';
 import BrandsSection from '@/components/home/BrandsSection';
@@ -10,26 +10,29 @@ import CategoriesSection from '@/components/home/CategoriesSection';
 import ConcernSection from '@/components/home/ConcernSection';
 import ProductGrid from '@/components/product/ProductGrid';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function HomePage() {
   const [products, categories, banners] = await Promise.all([
-    apiClient.getProducts(),
-    apiClient.getCategories(),
-    apiClient.getBanners(),
+    getServerProducts(),
+    getServerCategories(),
+    getServerBanners(),
   ]);
 
-  // Extract banner sections
-  const heroSliderData = banners.find(b => b.widget_name === 'hero_slider')?.items.map(item => ({
-    id: Number(item.id),
+  // Extract banner sections (matching by both widget_name and id)
+  const heroSliderData = banners.find(b => b.widget_name === 'hero_slider' || b.id === 'hero-slider')?.items.map(item => ({
+    id: item.id,
     title: item.title || '',
     image: item.image,
     url: item.url,
     alt: item.alt || item.title || 'Shajgoj Banner'
   }));
 
-  const dealsYouCannotMiss = banners.find(b => b.id === 'deals-cannot-miss')?.items || [];
-  const topBrandsOffers = banners.find(b => b.id === 'top-brands-offers')?.items || [];
-  const limitedTimeOffers = banners.find(b => b.id === 'limited-time-offers')?.items || [];
-  const shopByConcerns = banners.find(b => b.id === 'shop-by-concerns')?.items || [];
+  const dealsYouCannotMiss = banners.find(b => b.id === 'deals-cannot-miss' || b.widget_name === 'deals-cannot-miss')?.items || [];
+  const topBrandsOffers = banners.find(b => b.id === 'top-brands-offers' || b.widget_name === 'top-brands-offers')?.items || [];
+  const limitedTimeOffers = banners.find(b => b.id === 'limited-time-offers' || b.widget_name === 'limited-time-offers')?.items || [];
+  const shopByConcerns = banners.find(b => b.id === 'shop-by-concerns' || b.widget_name === 'shop-by-concerns')?.items || [];
 
   // Segment products
   const bestsellers = products.slice(0, 10);

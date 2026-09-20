@@ -7,28 +7,27 @@ import bannersData from '@/data/banners.json';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 /**
- * API Client for seamless backend integration.
- * If NEXT_PUBLIC_API_URL is configured, fetches from your backend server.
- * Otherwise, serves pre-loaded catalog data from local JSON files.
+ * Client-safe API Client for fetching from Next.js API routes with graceful fallback.
  */
 export const apiClient = {
   // --- Products ---
   async getProducts(filter?: FilterState): Promise<Product[]> {
-    if (API_BASE_URL) {
-      try {
-        const queryParams = new URLSearchParams();
-        if (filter?.category) queryParams.append('category', filter.category);
-        if (filter?.brand) queryParams.append('brand', filter.brand);
-        if (filter?.searchQuery) queryParams.append('q', filter.searchQuery);
-        if (filter?.sortBy) queryParams.append('sort', filter.sortBy);
-        if (filter?.minPrice) queryParams.append('min_price', String(filter.minPrice));
-        if (filter?.maxPrice) queryParams.append('max_price', String(filter.maxPrice));
+    try {
+      const queryParams = new URLSearchParams();
+      if (filter?.category) queryParams.append('category', filter.category);
+      if (filter?.brand) queryParams.append('brand', filter.brand);
+      if (filter?.searchQuery) queryParams.append('q', filter.searchQuery);
+      if (filter?.sortBy) queryParams.append('sort', filter.sortBy);
+      if (filter?.minPrice) queryParams.append('min_price', String(filter.minPrice));
+      if (filter?.maxPrice) queryParams.append('max_price', String(filter.maxPrice));
 
-        const res = await fetch(`${API_BASE_URL}/api/products?${queryParams.toString()}`);
-        if (res.ok) return await res.json();
-      } catch (err) {
-        console.warn('Backend API request failed, using local mock data:', err);
+      const res = await fetch(`${API_BASE_URL}/api/products?${queryParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
       }
+    } catch (err) {
+      console.warn('API /api/products fetch failed, using fallback data:', err);
     }
 
     let result = [...(productsData as Product[])];
@@ -85,13 +84,14 @@ export const apiClient = {
   },
 
   async getProductBySlug(slug: string): Promise<Product | null> {
-    if (API_BASE_URL) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/products/${slug}`);
-        if (res.ok) return await res.json();
-      } catch (err) {
-        console.warn('Backend API request failed, using local mock data:', err);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/products/${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && (data._id || data.id)) return data;
       }
+    } catch (err) {
+      console.warn('API /api/products/[slug] failed, using fallback data:', err);
     }
 
     const found = (productsData as Product[]).find(p => p.slug === slug || String(p.id) === slug);
@@ -105,39 +105,42 @@ export const apiClient = {
 
   // --- Categories ---
   async getCategories(): Promise<Category[]> {
-    if (API_BASE_URL) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/categories`);
-        if (res.ok) return await res.json();
-      } catch (err) {
-        console.warn('Backend API request failed, using local mock data:', err);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/categories`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
       }
+    } catch (err) {
+      console.warn('API /api/categories failed, using fallback data:', err);
     }
     return categoriesData as Category[];
   },
 
   // --- Brands ---
   async getBrands(): Promise<Brand[]> {
-    if (API_BASE_URL) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/brands`);
-        if (res.ok) return await res.json();
-      } catch (err) {
-        console.warn('Backend API request failed, using local mock data:', err);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/brands`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
       }
+    } catch (err) {
+      console.warn('API /api/brands failed, using fallback data:', err);
     }
     return brandsData as Brand[];
   },
 
   // --- Banners ---
   async getBanners(): Promise<BannerSection[]> {
-    if (API_BASE_URL) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/banners`);
-        if (res.ok) return await res.json();
-      } catch (err) {
-        console.warn('Backend API request failed, using local mock data:', err);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/banners`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) return data;
       }
+    } catch (err) {
+      console.warn('API /api/banners failed, using fallback data:', err);
     }
     return bannersData as BannerSection[];
   },
