@@ -65,6 +65,15 @@ export default async function HomePage() {
           columns={4}
         />
 
+        {/* 6. Limited Time Offers Grid */}
+        <DealsSection
+          title="LIMITED TIME OFFERS & COMBOS"
+          items={limitedTimeOffers}
+          columns={4}
+        />
+
+
+
         {/* 4. Bestselling Products Grid */}
         <ProductGrid
           title={<span className="flex items-center gap-2"><FlameIcon className="w-5 h-5 text-sg-pink" /> BESTSELLERS & TOP RATED</span>}
@@ -79,12 +88,6 @@ export default async function HomePage() {
           items={topBrandsOffers}
         />
 
-        {/* 6. Limited Time Offers Grid */}
-        <DealsSection
-          title="LIMITED TIME OFFERS & COMBOS"
-          items={limitedTimeOffers}
-          columns={4}
-        />
 
         {/* 7. Flash Sale & Deals Product Grid */}
         <ProductGrid
