@@ -13,7 +13,7 @@ export default function BrandsSection({ title = "TOP BRANDS & OFFERS", items }: 
 
   return (
     <section className="py-6">
-      <h2 className="text-center font-bold text-xs uppercase tracking-wider mb-4 text-sg-black">
+      <h2 className="section-title text-center mb-5">
         {title}
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">

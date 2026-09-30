@@ -10,8 +10,10 @@ import CategoriesSection from '@/components/home/CategoriesSection';
 import ConcernSection from '@/components/home/ConcernSection';
 import ProductGrid from '@/components/product/ProductGrid';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// Served from the cache and regenerated in the background. Admin changes to
+// products, categories and banners invalidate the underlying data tags, so the
+// homepage stays in sync without querying MongoDB on every visit.
+export const revalidate = 300;
 
 export default async function HomePage() {
   const [products, categories, banners] = await Promise.all([
@@ -63,14 +65,14 @@ export default async function HomePage() {
 
         {/* 3. Deals You Cannot Miss (4-Columns) */}
         <DealsSection
-          title="DEALS YOU CANNOT MISS"
+          title="Deals You Cannot Miss"
           items={dealsYouCannotMiss}
           columns={4}
         />
 
         {/* 6. Limited Time Offers Grid */}
         <DealsSection
-          title="LIMITED TIME OFFERS & COMBOS"
+          title="Limited Time Offers & Combos"
           items={limitedTimeOffers}
           columns={4}
         />
@@ -79,7 +81,7 @@ export default async function HomePage() {
 
         {/* 4. Bestselling Products Grid */}
         <ProductGrid
-          title={<span className="flex items-center gap-2"><FlameIcon className="w-5 h-5 text-sg-pink" /> BESTSELLERS & TOP RATED</span>}
+          title={<span className="flex items-center gap-2"><FlameIcon className="w-5 h-5 text-sg-pink" /> Bestsellers &amp; Top Rated</span>}
           subtitle="Customer favorites backed by 100% authenticity guarantee"
           products={bestsellers}
           viewAllHref="/shop"
@@ -87,14 +89,14 @@ export default async function HomePage() {
 
         {/* 5. Top Brands & Offers (3-Columns) */}
         <BrandsSection
-          title="TOP BRANDS & OFFERS"
+          title="Top Brands & Offers"
           items={topBrandsOffers}
         />
 
 
         {/* 7. Flash Sale & Deals Product Grid */}
         <ProductGrid
-          title={<span className="flex items-center gap-2"><ZapIcon className="w-5 h-5 text-sg-pink" /> SPECIAL DEALS & DISCOUNTS</span>}
+          title={<span className="flex items-center gap-2"><ZapIcon className="w-5 h-5 text-sg-pink" /> Special Deals &amp; Discounts</span>}
           subtitle="Exclusive discounted beauty essentials for you"
           products={hotDeals}
           viewAllHref="/shop?offer=special"
@@ -108,7 +110,7 @@ export default async function HomePage() {
 
         {/* 10. New Arrivals Product Grid */}
         <ProductGrid
-          title={<span className="flex items-center gap-2"><SparklesIcon className="w-5 h-5 text-sg-pink" /> NEW ARRIVALS</span>}
+          title={<span className="flex items-center gap-2"><SparklesIcon className="w-5 h-5 text-sg-pink" /> New Arrivals</span>}
           subtitle="Just launched genuine skincare and cosmetics"
           products={newArrivals.length > 0 ? newArrivals : products.slice(10, 20)}
           viewAllHref="/shop?sort=newest"

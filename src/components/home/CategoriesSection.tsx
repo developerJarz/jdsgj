@@ -12,8 +12,8 @@ export default function CategoriesSection({ categories }: CategoriesSectionProps
 
   return (
     <section className="py-6">
-      <h2 className="text-center font-bold text-xs uppercase tracking-wider mb-4 text-sg-black">
-        SHOP BEAUTY PRODUCTS BY CATEGORY
+      <h2 className="section-title text-center mb-5">
+        Shop by Category
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-3">
         {categories.slice(0, 8).map((cat) => (

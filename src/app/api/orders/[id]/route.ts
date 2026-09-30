@@ -4,7 +4,8 @@ import Order from '@/models/Order';
 import Product from '@/models/Product';
 import Notification from '@/models/Notification';
 import { logAuditEvent } from '@/lib/auditLogger';
-import { getTokenFromRequest, verifyToken } from '@/lib/auth';
+import { authorizeRole } from '@/lib/middleware/withRole';
+import { invalidateStorefront } from '@/lib/cacheTags';
 import mongoose from 'mongoose';
 
 interface RouteParams {
@@ -35,6 +36,9 @@ export async function GET(req: Request, { params }: RouteParams) {
 }
 
 export async function PUT(req: Request, { params }: RouteParams) {
+  const { user: staffUser, errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
     const resolvedParams = await params;
@@ -48,13 +52,6 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
     if (!order) {
       return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
-    }
-
-    // Identify who updated
-    let staffUser: any = null;
-    const token = getTokenFromRequest(req);
-    if (token) {
-      staffUser = verifyToken(token);
     }
 
     const previousStatus = order.status;
@@ -79,16 +76,23 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
       // If order cancelled, restore inventory
       if (status === 'cancelled' && previousStatus !== 'cancelled') {
-        for (const item of order.items) {
-          if (item.id) {
-            try {
-              await Product.findOneAndUpdate(
-                { $or: [{ id: item.id as any }, { slug: String(item.id) }] },
-                { $inc: { stock: Math.max(1, Number(item.quantity || 1)) } }
-              );
-            } catch (stockErr) {
-              console.warn('Could not restore stock on cancel:', stockErr);
-            }
+        const restoreOps = order.items
+          .filter((item) => item.id)
+          .map((item) => {
+            const qty = Math.max(1, Number(item.quantity || 1));
+            return {
+              updateOne: {
+                filter: { $or: [{ id: item.id as any }, { slug: String(item.id) }] },
+                update: { $inc: { stock: qty, sold_count: -qty } },
+              },
+            };
+          });
+        if (restoreOps.length > 0) {
+          try {
+            await Product.bulkWrite(restoreOps, { ordered: false });
+            invalidateStorefront('products');
+          } catch (stockErr) {
+            console.warn('Could not restore stock on cancel:', stockErr);
           }
         }
       }
@@ -121,7 +125,7 @@ export async function PUT(req: Request, { params }: RouteParams) {
 
     try {
       await logAuditEvent({
-        user: staffUser ? { _id: staffUser.userId, name: staffUser.name, role: staffUser.role } : undefined,
+        user: staffUser,
         action: 'order.update',
         target: 'Order',
         targetId: order._id.toString(),

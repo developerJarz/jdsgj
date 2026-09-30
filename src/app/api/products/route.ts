@@ -2,46 +2,58 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { Product } from '@/models/Product';
 import { ensureDatabaseSeeded } from '@/lib/seed';
+import { authorizeRole } from '@/lib/middleware/withRole';
+import { getTokenFromRequest, verifyToken } from '@/lib/auth';
+import { logAuditEvent } from '@/lib/auditLogger';
+import { invalidateStorefront } from '@/lib/cacheTags';
+import { applyPricing, buildProductFields, escapeRegex, slugify } from '@/lib/productInput';
+
+const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&q=80';
 
 export async function GET(req: Request) {
   try {
     await connectToDatabase();
-    await ensureDatabaseSeeded();
 
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
-    const q = searchParams.get('q');
+    const q = searchParams.get('q')?.trim().slice(0, 80);
     const sort = searchParams.get('sort');
     const minPrice = searchParams.get('min_price');
     const maxPrice = searchParams.get('max_price');
     const lowStock = searchParams.get('low_stock');
-    const limit = Number(searchParams.get('limit')) || 0;
+    const limit = Math.min(Number(searchParams.get('limit')) || 0, 500);
 
-    const query: any = { is_active: { $ne: false } };
+    // Staff can list hidden (inactive) products in the admin catalog
+    let includeInactive = false;
+    if (searchParams.get('include_inactive') === 'true') {
+      const token = getTokenFromRequest(req);
+      const session = token ? verifyToken(token) : null;
+      includeInactive = Boolean(session && ['admin', 'superadmin', 'moderator'].includes(session.role));
+    }
+
+    const query: any = includeInactive ? {} : { is_active: { $ne: false } };
+    const and: any[] = [];
 
     if (lowStock === 'true') {
       query.stock = { $lte: 10 };
     }
 
     if (category) {
-      query.$or = [
-        { category_slug: new RegExp(`^${category}$`, 'i') },
-        { category: new RegExp(category, 'i') },
-      ];
+      const c = escapeRegex(category);
+      and.push({ $or: [{ category_slug: new RegExp(`^${c}$`, 'i') }, { category: new RegExp(c, 'i') }] });
     }
 
     if (brand) {
-      query.brand_slug = new RegExp(`^${brand}$`, 'i');
+      query.brand_slug = new RegExp(`^${escapeRegex(brand)}$`, 'i');
     }
 
     if (q) {
-      query.$or = [
-        { name: new RegExp(q, 'i') },
-        { brand: new RegExp(q, 'i') },
-        { category: new RegExp(q, 'i') },
-      ];
+      const pattern = new RegExp(escapeRegex(q), 'i');
+      and.push({ $or: [{ name: pattern }, { brand: pattern }, { category: pattern }, { tags: pattern }] });
     }
+
+    if (and.length > 0) query.$and = and;
 
     if (minPrice || maxPrice) {
       query.sale_price = {};
@@ -72,7 +84,12 @@ export async function GET(req: Request) {
       mongoQuery = mongoQuery.limit(limit);
     }
 
-    const products = await mongoQuery.lean();
+    let products = await mongoQuery.lean();
+    if (products.length === 0 && Object.keys(query).length <= 1 && !q) {
+      // Empty catalog on a fresh database: seed once, then retry.
+      await ensureDatabaseSeeded();
+      products = await mongoQuery.clone().lean();
+    }
     return NextResponse.json(products);
   } catch (err: any) {
     console.warn('Fetch products DB error (using fallback):', err.message);
@@ -82,42 +99,53 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const { user, errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
     const data = await req.json();
 
-    if (!data.name || !data.sale_price) {
-      return NextResponse.json({ success: false, message: 'Name and Price are required' }, { status: 400 });
+    if (!data.name?.trim() || !data.sale_price) {
+      return NextResponse.json({ success: false, message: 'Name and sale price are required' }, { status: 400 });
+    }
+    if (!data.brand_id && !data.brand) {
+      return NextResponse.json({ success: false, message: 'Please choose a brand' }, { status: 400 });
+    }
+    if (!data.category_id && !data.category) {
+      return NextResponse.json({ success: false, message: 'Please choose a category' }, { status: 400 });
     }
 
-    const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const id = data.id || `SG-${Date.now()}`;
+    const fields = await buildProductFields(data);
+    applyPricing(fields, data);
 
-    const regPrice = Number(data.regular_price) || Number(data.sale_price);
-    const salePrice = Number(data.sale_price);
-    const discount = regPrice > salePrice ? Math.round(((regPrice - salePrice) / regPrice) * 100) : 0;
+    // Unique slug even when two products share a name
+    const baseSlug = slugify(data.slug || data.name) || `product-${Date.now()}`;
+    const slugTaken = await Product.exists({ slug: baseSlug });
+    const slug = slugTaken ? `${baseSlug}-${Date.now().toString(36)}` : baseSlug;
 
+    const thumbnail = fields.thumbnail || PLACEHOLDER_IMAGE;
     const product = await Product.create({
-      ...data,
-      id,
-      slug,
-      price: salePrice,
-      regular_price: regPrice,
-      sale_price: salePrice,
-      discount_percentage: discount,
-      has_sale: discount > 0,
-      stock: Number(data.stock) || 20,
-      thumbnail: data.thumbnail || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&q=80',
-      images: Array.isArray(data.images) && data.images.length > 0 ? data.images : [data.thumbnail || 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&q=80'],
-      brand: data.brand || 'Authentic',
-      brand_slug: (data.brand || 'authentic').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      category: data.category || 'Skin Care',
-      category_slug: (data.category || 'skin-care').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      rating: 5.0,
-      reviews_count: 1,
-      reward_points: Math.floor(salePrice / 10),
+      rating: 0,
+      reviews_count: 0,
       is_new: true,
+      ...fields,
+      id: `SG-${Date.now()}`,
+      slug,
+      thumbnail,
+      images: fields.images?.length ? fields.images : [thumbnail],
+      stock: fields.stock ?? 0,
     });
+
+    await logAuditEvent({
+      user,
+      action: 'product.create',
+      target: 'Product',
+      targetId: product._id.toString(),
+      details: `Created product: ${product.name} (${product.brand}, ৳${product.sale_price})`,
+      req,
+    });
+    invalidateStorefront('products');
 
     return NextResponse.json({ success: true, product });
   } catch (err: any) {

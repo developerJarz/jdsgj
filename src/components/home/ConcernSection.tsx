@@ -12,8 +12,8 @@ export default function ConcernSection({ items }: ConcernSectionProps) {
 
   return (
     <section className="py-6">
-      <h2 className="text-center font-bold text-xs uppercase tracking-wider mb-4 text-sg-black">
-        SHOP BY CONCERN
+      <h2 className="section-title text-center mb-5">
+        Shop by Concern
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {items.map((item) => (

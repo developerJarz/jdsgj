@@ -25,7 +25,7 @@ export default function ProductGrid({
         <div className="flex items-center justify-between mb-4">
           <div>
             {title && (
-              <h2 className="text-sm md:text-base font-extrabold uppercase tracking-wide text-sg-black">
+              <h2 className="section-title">
                 {title}
               </h2>
             )}
@@ -49,7 +49,7 @@ export default function ProductGrid({
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product._id ?? product.id} product={product} />
         ))}
       </div>
     </section>

@@ -7,21 +7,28 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import { useAuth } from '@/context/AuthContext';
-import { MenuIcon, CloseIcon, SearchIcon, ShajgojBagIcon, UserIcon, ShieldCheckIcon, FlameIcon, CrownIcon, ShieldIcon, LogOutIcon } from './Icons';
-import categoriesData from '@/data/categories.json';
+import { MenuIcon, CloseIcon, SearchIcon, ShajgojBagIcon, UserIcon, ShieldCheckIcon, FlameIcon, CrownIcon, ShieldIcon, LogOutIcon, ChevronDownIcon } from './Icons';
+import { NavData } from '@/types';
+import { DEFAULT_MENU } from '@/lib/defaultMenu';
+import { trackEvent } from '@/lib/tracking';
 
-export default function MobileHeader() {
+export default function MobileHeader({ navData }: { navData: NavData }) {
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { totalItems, openCart } = useCart();
   const { totalWishlist } = useWishlist();
   const { user, logout } = useAuth();
 
+  const menu = (navData.menu.length > 0 ? navData.menu : DEFAULT_MENU).filter(m => m.slug !== 'brands');
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/shop?q=${encodeURIComponent(searchQuery.trim())}`);
+    const q = searchQuery.trim();
+    if (q) {
+      trackEvent('search', { query: q });
+      router.push(`/shop?q=${encodeURIComponent(q)}`);
     }
   };
 
@@ -215,20 +222,51 @@ export default function MobileHeader() {
             {/* Navigation Links */}
             <div className="py-2 flex-1 divide-y divide-gray-50">
               <div className="px-4 py-2">
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Categories</p>
-                <ul className="space-y-1">
-                  {categoriesData.map(cat => (
-                    <li key={cat.id}>
-                      <Link
-                        href={`/shop?category=${cat.slug}`}
-                        onClick={() => setIsDrawerOpen(false)}
-                        className="flex items-center justify-between py-2 text-xs font-medium text-sg-black hover:text-sg-pink"
-                      >
-                        <span>{cat.name}</span>
-                        <span className="text-gray-300">›</span>
-                      </Link>
-                    </li>
-                  ))}
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Shop by Category</p>
+                <ul className="divide-y divide-gray-50">
+                  {menu.map(item => {
+                    const hasChildren = item.type !== 'link' && item.items.length > 0;
+                    const isExpanded = expandedMenu === item.slug;
+                    return (
+                      <li key={item.slug}>
+                        <div className="flex items-center justify-between">
+                          <Link
+                            href={item.href || '/shop'}
+                            onClick={() => setIsDrawerOpen(false)}
+                            className={`flex-1 py-2.5 text-[13px] font-semibold hover:text-sg-pink ${item.slug === 'offers' ? 'text-sg-pink' : 'text-sg-black'}`}
+                          >
+                            {item.title}
+                          </Link>
+                          {hasChildren && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMenu(isExpanded ? null : item.slug)}
+                              aria-expanded={isExpanded}
+                              aria-label={`Show ${item.title} sub-categories`}
+                              className="p-2 text-gray-400"
+                            >
+                              <ChevronDownIcon className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+                        {hasChildren && isExpanded && (
+                          <ul className="pb-2 pl-3 space-y-0.5">
+                            {item.items.flatMap(group => [group, ...(item.type === 'mega' ? group.children ?? [] : [])]).map(link => (
+                              <li key={`${link.label}-${link.href}`}>
+                                <Link
+                                  href={link.href}
+                                  onClick={() => setIsDrawerOpen(false)}
+                                  className="block py-1.5 text-xs text-gray-600 hover:text-sg-pink"
+                                >
+                                  {link.label}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 
@@ -241,7 +279,7 @@ export default function MobileHeader() {
                       onClick={() => setIsDrawerOpen(false)}
                       className="text-sg-black hover:text-sg-pink block py-1 font-semibold"
                     >
-                      All Brands (A-Z)
+                      All Brands ({navData.brands.length})
                     </Link>
                   </li>
                   <li>

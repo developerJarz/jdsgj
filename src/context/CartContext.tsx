@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Product, CartItem } from '@/types';
+import { trackEvent } from '@/lib/tracking';
 
 interface CartContextType {
   items: CartItem[];
@@ -55,6 +56,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, { product, quantity }];
     });
     setIsCartOpen(true);
+    trackEvent('add_to_cart', {
+      productId: String(product.id),
+      productName: product.name,
+      value: product.sale_price * quantity,
+    });
   };
 
   const removeFromCart = (productId: number | string) => {

@@ -48,6 +48,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       label: 'OVERVIEW',
       items: [
         { name: 'Dashboard', href: '/admin', icon: <BarChartIcon className="w-4 h-4" /> },
+        { name: 'Store Activity', href: '/admin/activity', icon: <GlobeIcon className="w-4 h-4" /> },
       ],
     },
     {

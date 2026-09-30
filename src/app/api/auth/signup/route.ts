@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import { User } from '@/models/User';
 import { OtpToken } from '@/models/OtpToken';
 import { hashPassword, signToken } from '@/lib/auth';
+import { recordServerActivity } from '@/lib/activity';
 
 export async function POST(req: Request) {
   let body: Record<string, string> = {};
@@ -81,6 +82,8 @@ export async function POST(req: Request) {
 
     // Clean up used OTP tokens for this email
     await OtpToken.deleteMany({ email: cleanEmail });
+
+    recordServerActivity({ type: 'signup', req, userId: user._id.toString(), userName: user.name, path: '/login' });
 
     const token = signToken({
       userId: user._id.toString(),

@@ -1,20 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { usePathname } from 'next/navigation';
+import { NavData } from '@/types';
 import Header from './Header';
 import MobileHeader from './MobileHeader';
 import MobileBottomNav from './MobileBottomNav';
 import Footer from './Footer';
 import CartDrawer from './CartDrawer';
+import ActivityTracker from './ActivityTracker';
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children, navData }: { children: React.ReactNode; navData: NavData }) {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const isAdminOrModerator =
     pathname?.startsWith('/admin') || pathname?.startsWith('/moderator');
@@ -25,11 +22,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      {/* Anonymous page-view / session tracking for the admin Activity dashboard */}
+      <ActivityTracker />
+
       {/* Desktop Navigation */}
-      <Header />
+      <Header navData={navData} />
 
       {/* Mobile Webview Navigation */}
-      <MobileHeader />
+      <MobileHeader navData={navData} />
 
       {/* Main Content Area (extra bottom padding on mobile for MobileBottomNav) */}
       <main className="flex-1 pb-16 lg:pb-0">

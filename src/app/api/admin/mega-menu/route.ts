@@ -1,43 +1,40 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { MegaMenu } from '@/models/MegaMenu';
+import { authorizeRole } from '@/lib/middleware/withRole';
+import { logAuditEvent } from '@/lib/auditLogger';
+import { invalidateStorefront } from '@/lib/cacheTags';
+import { DEFAULT_MENU } from '@/lib/defaultMenu';
 
-const defaultMenu = [
-  { _id: 'mm-1', title: 'BRANDS', slug: 'brands', type: 'mega', position: 1, isActive: true, href: '/shop', items: [] },
-  { _id: 'mm-2', title: 'SKIN CARE', slug: 'skin-care', type: 'dropdown', position: 2, isActive: true, href: '/shop?category=skin-care', items: [
-    { label: 'Moisturizer', href: '/shop?category=skin-care&q=moisturizer' },
-    { label: 'Cleanser', href: '/shop?category=skin-care&q=cleanser' },
-    { label: 'Serum', href: '/shop?category=skin-care&q=serum' },
-    { label: 'Sunscreen', href: '/shop?category=skin-care&q=sunscreen' },
-    { label: 'Face Mask', href: '/shop?category=skin-care&q=mask' },
-  ]},
-  { _id: 'mm-3', title: 'MAKEUP', slug: 'makeup', type: 'dropdown', position: 3, isActive: true, href: '/shop?category=makeup', items: [
-    { label: 'Lipstick', href: '/shop?category=makeup&q=lipstick' },
-    { label: 'Foundation', href: '/shop?category=makeup&q=foundation' },
-    { label: 'Eye Liner', href: '/shop?category=makeup&q=eyeliner' },
-    { label: 'Mascara', href: '/shop?category=makeup&q=mascara' },
-  ]},
-  { _id: 'mm-4', title: 'HAIR CARE', slug: 'hair-care', type: 'link', position: 4, isActive: true, href: '/shop?category=hair', items: [] },
-  { _id: 'mm-5', title: 'FRAGRANCE', slug: 'fragrance', type: 'link', position: 5, isActive: true, href: '/shop?category=fragrance', items: [] },
-  { _id: 'mm-6', title: 'K-BEAUTY', slug: 'k-beauty', type: 'link', position: 6, isActive: true, href: '/shop?category=k-beauty', items: [] },
-  { _id: 'mm-7', title: '🔥 OFFERS', slug: 'offers', type: 'link', position: 7, isActive: true, href: '/shop?offer=offers', items: [] },
-];
+export async function GET(req: Request) {
+  const { errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
 
-export async function GET() {
   try {
     await connectToDatabase();
-    const menuItems = await MegaMenu.find({ isActive: true }).sort({ position: 1 }).lean();
+    let menuItems = await MegaMenu.find().sort({ position: 1 }).lean();
+
+    // First visit to the builder: store the storefront's starter menu in the
+    // database so every entry can be edited, reordered or switched off here.
     if (menuItems.length === 0) {
-      return NextResponse.json(defaultMenu);
+      await MegaMenu.insertMany(
+        DEFAULT_MENU.map((item, index) => ({ ...item, position: index + 1, isActive: true }))
+      );
+      menuItems = await MegaMenu.find().sort({ position: 1 }).lean();
+      invalidateStorefront('menu');
     }
+
     return NextResponse.json(menuItems);
   } catch (err: any) {
-    console.warn('MegaMenu fetch error (fallback):', err.message);
-    return NextResponse.json(defaultMenu);
+    console.warn('MegaMenu fetch error:', err.message);
+    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
+  const { user, errorResponse } = await authorizeRole(req, ['admin']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
     const data = await req.json();
@@ -61,6 +58,9 @@ export async function POST(req: Request) {
       items: data.items || [],
     });
 
+    await logAuditEvent({ user, action: 'menu.create', target: 'MegaMenu', targetId: menuItem._id.toString(), details: `Added menu item: ${menuItem.title}`, req });
+    invalidateStorefront('menu');
+
     return NextResponse.json({ success: true, menuItem });
   } catch (err: any) {
     console.error('Create menu item error:', err);
@@ -69,6 +69,9 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const { user, errorResponse } = await authorizeRole(req, ['admin']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
     const data = await req.json();
@@ -82,6 +85,8 @@ export async function PUT(req: Request) {
         },
       }));
       await MegaMenu.bulkWrite(bulkOps);
+      await logAuditEvent({ user, action: 'menu.reorder', target: 'MegaMenu', details: 'Reordered header menu', req });
+      invalidateStorefront('menu');
       return NextResponse.json({ success: true, message: 'Menu reordered' });
     }
 
@@ -94,6 +99,9 @@ export async function PUT(req: Request) {
     if (!menuItem) {
       return NextResponse.json({ success: false, message: 'Menu item not found' }, { status: 404 });
     }
+
+    await logAuditEvent({ user, action: 'menu.update', target: 'MegaMenu', targetId: String(menuId), details: `Updated menu item: ${menuItem.title}`, req });
+    invalidateStorefront('menu');
 
     return NextResponse.json({ success: true, menuItem });
   } catch (err: any) {

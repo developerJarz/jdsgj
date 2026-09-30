@@ -4,8 +4,15 @@ import { Order } from '@/models/Order';
 import { Product } from '@/models/Product';
 import { User } from '@/models/User';
 import { getTokenFromRequest, verifyToken } from '@/lib/auth';
+import { authorizeRole } from '@/lib/middleware/withRole';
+import { recordServerActivity } from '@/lib/activity';
+import { invalidateStorefront } from '@/lib/cacheTags';
 
 export async function GET(req: Request) {
+  // Order list contains customer names, phones and addresses: staff only.
+  const { errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
     const { searchParams } = new URL(req.url);
@@ -143,19 +150,32 @@ export async function POST(req: Request) {
 
     const order = await Order.create(orderData);
 
-    // Automatically decrement inventory stock in MongoDB
-    for (const item of formattedItems) {
-      if (item.id) {
-        try {
-          await Product.findOneAndUpdate(
-            { $or: [{ id: item.id }, { slug: String(item.id) }] },
-            { $inc: { stock: -item.quantity } }
-          );
-        } catch (stockErr) {
-          console.warn('Could not decrement stock for item:', item.id);
-        }
+    // Decrement inventory (and bump sold_count) in a single round-trip
+    const stockOps = formattedItems
+      .filter((item: any) => item.id)
+      .map((item: any) => ({
+        updateOne: {
+          filter: { $or: [{ id: item.id }, { slug: String(item.id) }] },
+          update: { $inc: { stock: -item.quantity, sold_count: item.quantity } },
+        },
+      }));
+    if (stockOps.length > 0) {
+      try {
+        await Product.bulkWrite(stockOps, { ordered: false });
+        invalidateStorefront('products');
+      } catch (stockErr) {
+        console.warn('Could not update stock for order items:', stockErr);
       }
     }
+
+    recordServerActivity({
+      type: 'order_placed',
+      req,
+      userId: userRecord?._id?.toString(),
+      userName: customer.fullName,
+      path: '/checkout',
+      value: cleanGrandTotal,
+    });
 
     // Award reward points if registered user
     if (userRecord) {

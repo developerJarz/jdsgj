@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import Brand from '@/models/Brand';
 import { authorizeRole } from '@/lib/middleware/withRole';
 import { logAuditEvent } from '@/lib/auditLogger';
+import { invalidateStorefront } from '@/lib/cacheTags';
 import fs from 'fs';
 import path from 'path';
 
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { name, logo, description, order, seo_title, seo_description } = body;
+    const { name, logo, description, order, seo_title, seo_description, is_top } = body;
 
     if (!name) {
       return NextResponse.json({ success: false, message: 'Brand name is required' }, { status: 400 });
@@ -64,6 +65,7 @@ export async function POST(req: Request) {
       order: Number(order) || 0,
       seo_title,
       seo_description,
+      is_top: Boolean(is_top),
       isActive: true,
     });
 
@@ -75,6 +77,7 @@ export async function POST(req: Request) {
       details: `Created brand: ${brand.name}`,
       req,
     });
+    invalidateStorefront('brands');
 
     return NextResponse.json({ success: true, brand });
   } catch (err: any) {

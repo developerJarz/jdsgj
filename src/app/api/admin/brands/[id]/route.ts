@@ -3,6 +3,8 @@ import { connectToDatabase } from '@/lib/db';
 import Brand from '@/models/Brand';
 import { authorizeRole } from '@/lib/middleware/withRole';
 import { logAuditEvent } from '@/lib/auditLogger';
+import { invalidateStorefront } from '@/lib/cacheTags';
+import Product from '@/models/Product';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -17,6 +19,7 @@ export async function PUT(req: Request, { params }: RouteContext) {
     const body = await req.json();
 
     await connectToDatabase();
+    const previous = await Brand.findById(id).lean();
     const brand = await Brand.findByIdAndUpdate(
       id,
       {
@@ -25,15 +28,23 @@ export async function PUT(req: Request, { params }: RouteContext) {
         ...(body.description !== undefined && { description: body.description }),
         ...(body.order !== undefined && { order: Number(body.order) }),
         ...(body.isActive !== undefined && { isActive: body.isActive }),
+        ...(body.is_top !== undefined && { is_top: Boolean(body.is_top) }),
         ...(body.seo_title !== undefined && { seo_title: body.seo_title }),
         ...(body.seo_description !== undefined && { seo_description: body.seo_description }),
       },
       { new: true }
     );
 
-    if (!brand) {
+    if (!brand || !previous) {
       return NextResponse.json({ success: false, message: 'Brand not found' }, { status: 404 });
     }
+
+    // Keep denormalised product fields in sync when a brand is renamed
+    if (previous.name !== brand.name) {
+      await Product.updateMany({ brand_slug: previous.slug }, { $set: { brand: brand.name } });
+      invalidateStorefront('products');
+    }
+    invalidateStorefront('brands');
 
     await logAuditEvent({
       user,
@@ -57,7 +68,19 @@ export async function DELETE(req: Request, { params }: RouteContext) {
   try {
     const { id } = await params;
     await connectToDatabase();
-    await Brand.findByIdAndDelete(id);
+    const deleted = await Brand.findByIdAndDelete(id);
+
+    if (deleted) {
+      await logAuditEvent({
+        user,
+        action: 'brand.delete',
+        target: 'Brand',
+        targetId: id,
+        details: `Deleted brand: ${deleted.name}`,
+        req,
+      });
+      invalidateStorefront('brands');
+    }
 
     return NextResponse.json({ success: true, message: 'Brand deleted' });
   } catch (err: any) {

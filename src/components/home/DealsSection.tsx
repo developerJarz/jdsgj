@@ -18,7 +18,7 @@ export default function DealsSection({ title, items, columns = 4 }: DealsSection
 
   return (
     <section className="py-6">
-      <h2 className="text-center font-bold text-xs uppercase tracking-wider mb-4 text-sg-black">
+      <h2 className="section-title text-center mb-5">
         {title}
       </h2>
       <div className={`grid ${colClasses} gap-3`}>

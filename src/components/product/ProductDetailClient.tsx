@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,8 @@ import {
   GiftIcon,
 } from '@/components/common/Icons';
 import ProductGrid from '@/components/product/ProductGrid';
+import { trackEvent } from '@/lib/tracking';
+import RichText from './RichText';
 
 interface ProductDetailClientProps {
   product: Product;
@@ -41,6 +43,10 @@ export default function ProductDetailClient({
   const [isAdded, setIsAdded] = useState(false);
 
   const isFavorited = isInWishlist(product.id);
+
+  useEffect(() => {
+    trackEvent('product_view', { productId: String(product.id), productName: product.name, value: product.sale_price });
+  }, [product.id, product.name, product.sale_price]);
 
   const handleAdd = () => {
     addToCart(product, quantity);
@@ -166,7 +172,7 @@ export default function ProductDetailClient({
               </button>
             </div>
 
-            <h1 className="text-lg md:text-2xl font-black text-sg-black mt-1 leading-snug">
+            <h1 className="font-display text-xl md:text-3xl font-semibold text-sg-black mt-1 leading-snug">
               {product.name}
             </h1>
 
@@ -221,9 +227,7 @@ export default function ProductDetailClient({
 
           {/* Short Description */}
           {product.short_description && (
-            <p className="text-xs text-gray-600 leading-relaxed">
-              {product.short_description}
-            </p>
+            <RichText value={product.short_description} className="text-[13px] text-gray-600 leading-relaxed" />
           )}
 
           {/* Quantity and Actions */}
@@ -353,50 +357,35 @@ export default function ProductDetailClient({
           </button>
         </div>
 
-        <div className="pt-6 text-xs text-gray-700 leading-relaxed">
+        <div className="pt-6 text-[13.5px] text-gray-700 leading-7 max-w-[68ch]">
           {activeTab === 'description' && (
-            <div className="space-y-3">
-              <p>
-                {product.description ||
-                  'Pamper your skin with authentic beauty care. Formulated to provide optimal nourishment, hydration, and visible rejuvenation for all skin types.'}
-              </p>
-              <ul className="list-disc pl-5 space-y-1 text-gray-600">
-                <li>Suitable for daily skincare routine</li>
-                <li>Dermatologically tested and non-comedogenic</li>
-                <li>Preserves natural moisture barrier</li>
-              </ul>
-            </div>
+            <RichText
+              value={product.description}
+              fallback={<p className="text-gray-500">A detailed description for this product is coming soon.</p>}
+            />
           )}
 
           {activeTab === 'how_to_use' && (
-            <div className="space-y-2">
-              <p className="font-semibold text-sg-black">
-                Recommended Application:
-              </p>
-              <ol className="list-decimal pl-5 space-y-1.5 text-gray-600">
-                <li>Cleanse your face thoroughly with warm water.</li>
-                <li>
-                  Dispense a dime-sized amount onto clean fingertips.
-                </li>
-                <li>
-                  Gently massage onto target areas in upward circular motions
-                  until absorbed.
-                </li>
-                <li>
-                  Follow with sunscreen during the day or moisturizer at night.
-                </li>
-              </ol>
-            </div>
+            <RichText
+              value={product.how_to_use}
+              fallback={
+                <div className="space-y-2">
+                  <p className="text-gray-500">General guidance (always follow the directions on the pack):</p>
+                  <ol className="list-decimal pl-5 space-y-1.5 marker:text-sg-pink">
+                    <li className="pl-1">Start with clean, dry skin or hair.</li>
+                    <li className="pl-1">Apply a small amount and spread evenly.</li>
+                    <li className="pl-1">Patch-test first if you have sensitive skin.</li>
+                  </ol>
+                </div>
+              }
+            />
           )}
 
           {activeTab === 'ingredients' && (
-            <div className="space-y-2">
-              <p className="font-semibold text-sg-black">Key Ingredients:</p>
-              <p className="text-gray-600">
-                {product.ingredients ||
-                  'Aqua (Water), Glycerin, Niacinamide, Hyaluronic Acid, Centella Asiatica Extract, Tocopheryl Acetate (Vitamin E), Allantoin, Phenoxyethanol, Ethylhexylglycerin.'}
-              </p>
-            </div>
+            <RichText
+              value={product.ingredients}
+              fallback={<p className="text-gray-500">The full ingredient list is printed on the product packaging.</p>}
+            />
           )}
 
           {activeTab === 'faq' && (

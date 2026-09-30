@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Product } from '@/types';
+import { trackEvent } from '@/lib/tracking';
 
 interface WishlistContextType {
   wishlist: Product[];
@@ -35,6 +36,9 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [wishlist, isMounted]);
 
   const toggleWishlist = (product: Product) => {
+    if (!wishlist.some(item => item.id === product.id)) {
+      trackEvent('wishlist_add', { productId: String(product.id), productName: product.name });
+    }
     setWishlist(prev => {
       const exists = prev.some(item => item.id === product.id);
       if (exists) {

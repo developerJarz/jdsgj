@@ -3,12 +3,14 @@ import { connectToDatabase } from '@/lib/db';
 import { Order } from '@/models/Order';
 import { Product } from '@/models/Product';
 import { User } from '@/models/User';
-import { ensureDatabaseSeeded } from '@/lib/seed';
+import { authorizeRole } from '@/lib/middleware/withRole';
 
 export async function GET(req: Request) {
+  const { errorResponse } = await authorizeRole(req, ['admin']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
-    await ensureDatabaseSeeded();
 
     const { searchParams } = new URL(req.url);
     const fromDate = searchParams.get('from');

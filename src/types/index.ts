@@ -1,4 +1,5 @@
 export interface Product {
+  _id?: string;
   id: number | string;
   name: string;
   slug: string;
@@ -26,6 +27,7 @@ export interface Product {
 }
 
 export interface Category {
+  _id?: string;
   id: string;
   name: string;
   slug: string;
@@ -35,6 +37,7 @@ export interface Category {
 }
 
 export interface Brand {
+  _id?: string;
   id: string;
   name: string;
   slug: string;
@@ -64,6 +67,34 @@ export interface CartItem {
   product: Product;
   quantity: number;
   selectedSize?: string;
+}
+
+export interface NavMenuChild {
+  label: string;
+  href: string;
+}
+
+export interface NavMenuGroup {
+  label: string;
+  href: string;
+  icon?: string;
+  children?: NavMenuChild[];
+}
+
+/** A top-level header entry, managed from Admin → Mega Menu Builder. */
+export interface NavMenuItem {
+  _id?: string;
+  title: string;
+  slug: string;
+  type: 'link' | 'dropdown' | 'mega';
+  href?: string;
+  items: NavMenuGroup[];
+}
+
+export interface NavData {
+  menu: NavMenuItem[];
+  categories: Pick<Category, 'id' | 'name' | 'slug' | 'image'>[];
+  brands: Pick<Brand, 'id' | 'name' | 'slug' | 'logo' | 'is_top'>[];
 }
 
 export interface FilterState {

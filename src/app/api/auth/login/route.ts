@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { User } from '@/models/User';
 import { comparePassword, signToken } from '@/lib/auth';
-import { ensureDatabaseSeeded } from '@/lib/seed';
+import { recordServerActivity } from '@/lib/activity';
 
 export async function POST(req: Request) {
   let body: Record<string, string> = {};
@@ -28,7 +28,6 @@ export async function POST(req: Request) {
 
   try {
     await connectToDatabase();
-    await ensureDatabaseSeeded();
 
     // Allow login by phone or email
     const user = await User.findOne({
@@ -59,6 +58,8 @@ export async function POST(req: Request) {
     }
 
     const permissions = user.permissions || (user.role === 'admin' || user.role === 'superadmin' ? ['*'] : []);
+
+    recordServerActivity({ type: 'login', req, userId: user._id.toString(), userName: user.name, path: '/login' });
 
     const token = signToken({
       userId: user._id.toString(),

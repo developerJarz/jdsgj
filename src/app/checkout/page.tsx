@@ -5,10 +5,15 @@ import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { ShieldCheckIcon, CheckIcon, ShoppingBagIcon } from '@/components/common/Icons';
+import { trackEvent } from '@/lib/tracking';
 
 export default function CheckoutPage() {
   const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
+
+  useEffect(() => {
+    trackEvent('checkout_start');
+  }, []);
 
   const [formData, setFormData] = useState({
     fullName: '',

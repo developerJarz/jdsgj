@@ -3,6 +3,9 @@ import { connectToDatabase } from '@/lib/db';
 import { Banner } from '@/models/Banner';
 import { ensureDatabaseSeeded } from '@/lib/seed';
 import mongoose from 'mongoose';
+import { authorizeRole } from '@/lib/middleware/withRole';
+import { logAuditEvent } from '@/lib/auditLogger';
+import { invalidateStorefront } from '@/lib/cacheTags';
 
 export async function GET() {
   try {
@@ -18,9 +21,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const { user, errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
-    await ensureDatabaseSeeded();
     const data = await req.json();
 
     if (!data.widget_name) {
@@ -39,6 +44,9 @@ export async function POST(req: Request) {
       { new: true, upsert: true }
     );
 
+    await logAuditEvent({ user, action: 'banner.create', target: 'Banner', targetId: id, details: `Saved banner section: ${data.widget_name}`, req });
+    invalidateStorefront('banners');
+
     return NextResponse.json({ success: true, banner });
   } catch (err: any) {
     console.error('Create banner error:', err);
@@ -47,9 +55,11 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const { user, errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
-    await ensureDatabaseSeeded();
     const data = await req.json();
     const { bannerId, ...updates } = data;
 
@@ -74,6 +84,9 @@ export async function PUT(req: Request) {
         ...updates
       });
     }
+
+    await logAuditEvent({ user, action: 'banner.update', target: 'Banner', targetId: String(bannerId), details: `Updated banner section: ${banner.widget_name}`, req });
+    invalidateStorefront('banners');
 
     return NextResponse.json({ success: true, banner });
   } catch (err: any) {
