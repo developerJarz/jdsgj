@@ -22,6 +22,9 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "Shajgoj.bd – Buy Authentic Cosmetic and Beauty Products Online in Bangladesh",
   description: "Shop 100% authentic beauty products online in Bangladesh at Shajgoj.bd: makeup, skincare, and haircare from 450+ brands, at the best BDT prices with fast nationwide delivery.",
+  verification: {
+    google: "6fNarvxXmaAW-Ap10egDw5GKUtx47E-BkGulYvx4kUk",
+  },
   icons: {
     icon: [
       { url: "/favicon.png" },
@@ -47,10 +50,49 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${jakarta.variable} ${playfair.variable}`} suppressHydrationWarning>
+      <head>
+        <meta name="google-site-verification" content="6fNarvxXmaAW-Ap10egDw5GKUtx47E-BkGulYvx4kUk" />
+
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-S3RC6D7N01" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-S3RC6D7N01');
+            `,
+          }}
+        />
+
+        {/* Google Tag Manager */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+              })(window,document,'script','dataLayer','GTM-PTLQTNFV');
+            `,
+          }}
+        />
+      </head>
       <body
         suppressHydrationWarning
         className="antialiased min-h-screen flex flex-col bg-white text-sg-black font-sans"
       >
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-PTLQTNFV"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
+
         <AuthProvider>
           <CartProvider>
             <WishlistProvider>
