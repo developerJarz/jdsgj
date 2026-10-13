@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
     await connectToDatabase();
     const user = await User.findById(decoded.userId).select('-password');
-    if (!user) {
+    if (!user || user.isActive === false) {
       return NextResponse.json({ success: false, user: null }, { status: 404 });
     }
 

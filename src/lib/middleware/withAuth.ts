@@ -33,13 +33,29 @@ export async function authenticateRequest(
     };
   }
 
-  // Ensure DB connected & attach clean object
+  // Resolve privileges from the database on every request. A role change or
+  // suspension must take effect even when a 30-day login token is still valid.
   await connectDB();
+  const dbUser = await User.findById(payload.userId).select('name phone email role permissions isActive').lean();
+  if (!dbUser || dbUser.isActive === false) {
+    return {
+      user: null,
+      errorResponse: NextResponse.json(
+        { success: false, error: 'This account is unavailable. Please log in again.' },
+        { status: 401 }
+      ),
+    };
+  }
 
   return {
     user: {
-      ...payload,
+      userId: payload.userId,
       _id: payload.userId,
+      name: dbUser.name,
+      phone: dbUser.phone,
+      email: dbUser.email,
+      role: dbUser.role,
+      permissions: dbUser.permissions || [],
     },
     errorResponse: null,
   };

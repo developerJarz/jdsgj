@@ -71,7 +71,9 @@ function LoginContent() {
       setTimeout(() => {
         if (redirectUrl) {
           router.push(redirectUrl);
-        } else if (res.user?.role === 'admin' || res.user?.role === 'superadmin') {
+        } else if (res.user?.role === 'superadmin') {
+          router.push('/super-admin');
+        } else if (res.user?.role === 'admin') {
           router.push('/admin');
         } else if (res.user?.role === 'moderator') {
           router.push('/moderator');
@@ -293,7 +295,8 @@ function LoginContent() {
               <button
                 type="button"
                 onClick={() => {
-                  if (user.role === 'admin' || user.role === 'superadmin') router.push('/admin');
+                  if (user.role === 'superadmin') router.push('/super-admin');
+                  else if (user.role === 'admin') router.push('/admin');
                   else if (user.role === 'moderator') router.push('/moderator');
                   else router.push('/account');
                 }}

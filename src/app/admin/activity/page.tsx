@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import AdminLink from '@/components/admin/AdminLink';
 import { ActivityFeed, timeAgo } from '@/components/admin/ActivityFeed';
 
 const RANGES = [
@@ -263,7 +264,7 @@ export default function AdminActivityPage() {
           <Panel
             title="Staff Actions"
             subtitle="Recent admin & moderator changes"
-            action={<Link href="/admin/audit-log" className="text-xs font-bold text-sg-pink hover:underline">All →</Link>}
+            action={<AdminLink href="/admin/audit-log" className="text-xs font-bold text-sg-pink hover:underline">All →</AdminLink>}
           >
             <ul className="space-y-2.5">
               {(data?.adminActions ?? []).length === 0 && <li className="text-xs text-gray-400">No staff actions yet.</li>}

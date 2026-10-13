@@ -5,18 +5,20 @@ import { Category } from '@/types';
 
 interface CategoriesSectionProps {
   categories: Category[];
+  title?: string;
+  limit?: number;
 }
 
-export default function CategoriesSection({ categories }: CategoriesSectionProps) {
+export default function CategoriesSection({ categories, title = 'Shop by Category', limit = 8 }: CategoriesSectionProps) {
   if (!categories || categories.length === 0) return null;
 
   return (
     <section className="py-6">
       <h2 className="section-title text-center mb-5">
-        Shop by Category
+        {title}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-4 gap-3">
-        {categories.slice(0, 8).map((cat) => (
+        {categories.slice(0, limit).map((cat) => (
           <Link
             key={cat.id}
             href={`/shop?category=${cat.slug}`}

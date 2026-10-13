@@ -12,7 +12,7 @@ import { NavData } from '@/types';
 import { DEFAULT_MENU } from '@/lib/defaultMenu';
 import { trackEvent } from '@/lib/tracking';
 
-export default function MobileHeader({ navData }: { navData: NavData }) {
+export default function MobileHeader({ navData, topBar }: { navData: NavData; topBar?: React.ReactNode }) {
   const router = useRouter();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
@@ -41,6 +41,7 @@ export default function MobileHeader({ navData }: { navData: NavData }) {
   return (
     <>
       <div className="lg:hidden sticky top-0 z-[90] bg-white border-b border-gray-100 shadow-xs">
+        {topBar}
         {/* Mobile Top Bar */}
         <div className="px-4 py-2.5 flex items-center justify-between">
           {/* Hamburger Drawer Toggle */}

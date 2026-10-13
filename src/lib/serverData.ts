@@ -13,6 +13,8 @@ import categoriesData from '@/data/categories.json';
 import brandsData from '@/data/brands.json';
 import bannersData from '@/data/banners.json';
 import { Product, Category, Brand, BannerSection, NavMenuItem, NavData } from '@/types';
+import SiteSettingsModel from '@/models/SiteSettings';
+import { DEFAULT_SITE_CONTENT, SITE_CONTENT_ID, normalizeSiteContent, type SiteContent } from '@/lib/siteContent';
 
 /**
  * Server-side data provider for the storefront.
@@ -173,6 +175,27 @@ export async function getServerBrands(): Promise<Brand[]> {
     console.warn('DB getBrands fallback:', err);
   }
   return brandsData as unknown as Brand[];
+}
+
+const cachedSiteContent = unstable_cache(
+  async (): Promise<SiteContent> => {
+    await connectToDatabase();
+    const doc = await SiteSettingsModel.findById(SITE_CONTENT_ID).lean();
+    // Normalizing fills fields added after the document was saved.
+    return normalizeSiteContent(doc?.content ?? DEFAULT_SITE_CONTENT).content;
+  },
+  ['storefront-site-content'],
+  { tags: [CACHE_TAGS.siteContent], revalidate: REVALIDATE_SECONDS }
+);
+
+/** Homepage layout, announcement bar and footer, as edited in Page Layout Sections. */
+export async function getSiteContent(): Promise<SiteContent> {
+  try {
+    return await cachedSiteContent();
+  } catch (err) {
+    console.warn('DB getSiteContent fallback:', err);
+    return DEFAULT_SITE_CONTENT;
+  }
 }
 
 export async function getServerBanners(): Promise<BannerSection[]> {

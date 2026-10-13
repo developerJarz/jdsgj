@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/admin/AdminLink';
 import StatsCard from '@/components/admin/StatsCard';
 import StatusBadge from '@/components/admin/StatusBadge';
 import { ActivityFeed } from '@/components/admin/ActivityFeed';
+import { useAdminAccess } from '@/context/AdminAccessContext';
 import { ShoppingCartIcon, BarChartIcon, UsersIcon, PackageIcon, AlertTriangleIcon, GlobeIcon } from '@/components/common/Icons';
 
 const RANGES = [
@@ -34,6 +35,7 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState('30d');
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const showActivity = useAdminAccess().canAccess('/admin/activity');
 
   useEffect(() => {
     let cancelled = false;
@@ -60,6 +62,11 @@ export default function AdminDashboardPage() {
 
   // Live widget refreshes every 20s while the tab is visible
   useEffect(() => {
+    // Hidden Store Activity also hides this widget; don't poll an API that will refuse.
+    if (!showActivity) {
+      setActivity(null);
+      return;
+    }
     async function loadActivity() {
       try {
         const res = await fetch('/api/admin/activity?range=today');
@@ -74,7 +81,7 @@ export default function AdminDashboardPage() {
       if (document.visibilityState === 'visible') loadActivity();
     }, 20_000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [showActivity]);
 
   const stats = data?.stats ?? {};
   const trends = data?.trends ?? {};
@@ -129,7 +136,7 @@ export default function AdminDashboardPage() {
 
       {/* Revenue chart + live activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <div className={`${showActivity ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white rounded-2xl p-6 border border-gray-100 shadow-sm`}>
           <div className="flex items-start justify-between mb-2">
             <div>
               <h3 className="text-base font-bold text-gray-900">Revenue</h3>
@@ -180,7 +187,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Live activity widget */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col">
+        {showActivity && <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-base font-bold text-gray-900">Live on Store</h3>
             <Link href="/admin/activity" className="text-xs font-bold text-sg-pink hover:underline">
@@ -210,7 +217,7 @@ export default function AdminDashboardPage() {
           <div className="flex-1 min-h-0 max-h-56 overflow-y-auto custom-scroll -mx-2">
             <ActivityFeed events={(activity?.feed ?? []).slice(0, 8)} compact />
           </div>
-        </div>
+        </div>}
       </div>
 
       {/* Pipeline, Top sellers, Low stock */}

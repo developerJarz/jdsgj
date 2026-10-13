@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticateRequest, AuthenticatedUser } from './withAuth';
 import User from '@/models/User';
+import { isAdminApiDisabled } from '@/lib/adminAccess';
 
 export async function authorizePermission(
   req: Request,
@@ -8,6 +9,16 @@ export async function authorizePermission(
 ): Promise<{ user: AuthenticatedUser | null; errorResponse: NextResponse | null }> {
   const { user, errorResponse } = await authenticateRequest(req);
   if (errorResponse || !user) return { user: null, errorResponse };
+
+  if (await isAdminApiDisabled(req, user.role)) {
+    return {
+      user: null,
+      errorResponse: NextResponse.json(
+        { success: false, error: 'This dashboard section has been disabled by the super admin.' },
+        { status: 403 }
+      ),
+    };
+  }
 
   // superadmin and admin have all permissions by default
   if (user.role === 'superadmin' || user.role === 'admin') {

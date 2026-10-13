@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+import Link from './AdminLink';
 import SearchableSelect, { SelectOption } from './SearchableSelect';
 import ImageUploader from './ImageUploader';
 

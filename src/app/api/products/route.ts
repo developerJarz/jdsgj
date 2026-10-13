@@ -3,7 +3,6 @@ import { connectToDatabase } from '@/lib/db';
 import { Product } from '@/models/Product';
 import { ensureDatabaseSeeded } from '@/lib/seed';
 import { authorizeRole } from '@/lib/middleware/withRole';
-import { getTokenFromRequest, verifyToken } from '@/lib/auth';
 import { logAuditEvent } from '@/lib/auditLogger';
 import { invalidateStorefront } from '@/lib/cacheTags';
 import { applyPricing, buildProductFields, escapeRegex, slugify } from '@/lib/productInput';
@@ -27,9 +26,9 @@ export async function GET(req: Request) {
     // Staff can list hidden (inactive) products in the admin catalog
     let includeInactive = false;
     if (searchParams.get('include_inactive') === 'true') {
-      const token = getTokenFromRequest(req);
-      const session = token ? verifyToken(token) : null;
-      includeInactive = Boolean(session && ['admin', 'superadmin', 'moderator'].includes(session.role));
+      const { errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+      if (errorResponse) return errorResponse;
+      includeInactive = true;
     }
 
     const query: any = includeInactive ? {} : { is_active: { $ne: false } };

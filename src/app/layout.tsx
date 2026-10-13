@@ -5,7 +5,7 @@ import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { AuthProvider } from "@/context/AuthContext";
 import AppShell from "@/components/common/AppShell";
-import { getNavData } from "@/lib/serverData";
+import { getNavData, getSiteContent } from "@/lib/serverData";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -46,7 +46,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // Cached + tag-invalidated, so this adds no DB round-trip per request.
-  const navData = await getNavData();
+  const [navData, siteContent] = await Promise.all([getNavData(), getSiteContent()]);
 
   return (
     <html lang="en" className={`${jakarta.variable} ${playfair.variable}`} suppressHydrationWarning>
@@ -96,7 +96,7 @@ export default async function RootLayout({
         <AuthProvider>
           <CartProvider>
             <WishlistProvider>
-              <AppShell navData={navData}>{children}</AppShell>
+              <AppShell navData={navData} announcement={siteContent.announcement} footer={siteContent.footer}>{children}</AppShell>
             </WishlistProvider>
           </CartProvider>
         </AuthProvider>

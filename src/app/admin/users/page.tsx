@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useAdminAccess } from '@/context/AdminAccessContext';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminUsersPage() {
+  const { canAccess } = useAdminAccess();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -29,21 +34,25 @@ export default function AdminUsersPage() {
     if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
 
     try {
-      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
-      await fetch('/api/admin/users', {
+      const response = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, role: newRole }),
       });
+      const data = await response.json();
+      if (!response.ok || !data.success) { setError(data.message || 'Unable to update role.'); return; }
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
+      setError('');
     } catch (e) {
       console.error(e);
     }
   };
 
   const filtered = users.filter(u =>
-    u.name?.toLowerCase().includes(search.toLowerCase()) ||
+    u.role !== 'superadmin' &&
+    (canAccess('/admin/staff') || u.role === 'customer') && (u.name?.toLowerCase().includes(search.toLowerCase()) ||
     u.phone?.includes(search) ||
-    u.email?.toLowerCase().includes(search.toLowerCase())
+    u.email?.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -54,6 +63,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Search and Summary */}
+      {error && <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</p>}
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between gap-4">
         <input
           type="search"
@@ -120,12 +130,12 @@ export default function AdminUsersPage() {
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      <button
+                      {canAccess('/admin/staff') && user._id !== (currentUser?.id || currentUser?._id) && (user.role !== 'superadmin' || currentUser?.role === 'superadmin') && <button
                         onClick={() => handleRoleToggle(user._id, user.role)}
                         className="px-3 py-1 bg-gray-100 hover:bg-sg-pink hover:text-white rounded-lg text-xs font-bold transition-colors"
                       >
                         {user.role === 'admin' ? 'Demote to Customer' : 'Make Admin'}
-                      </button>
+                      </button>}
                     </td>
                   </tr>
                 ))}

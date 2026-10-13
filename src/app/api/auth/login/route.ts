@@ -49,6 +49,10 @@ export async function POST(req: Request) {
       );
     }
 
+    if (user.isActive === false) {
+      return NextResponse.json({ success: false, message: 'Your account has been suspended. Contact the store administrator.' }, { status: 403 });
+    }
+
     // Update lastLogin
     try {
       user.lastLogin = new Date();
@@ -59,7 +63,7 @@ export async function POST(req: Request) {
 
     const permissions = user.permissions || (user.role === 'admin' || user.role === 'superadmin' ? ['*'] : []);
 
-    recordServerActivity({ type: 'login', req, userId: user._id.toString(), userName: user.name, path: '/login' });
+    recordServerActivity({ type: 'login', req, userId: user._id.toString(), userName: user.name, userRole: user.role, path: '/login' });
 
     const token = signToken({
       userId: user._id.toString(),

@@ -5,6 +5,7 @@ import Product from '@/models/Product';
 import User from '@/models/User';
 import ActivityEvent from '@/models/ActivityEvent';
 import { authorizeRole } from '@/lib/middleware/withRole';
+import { getVisibleLogFilter } from '@/lib/logVisibility';
 
 const TZ = 'Asia/Dhaka';
 const DAY_MS = 86_400_000;
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
 
   try {
     await connectToDatabase();
+    const visibleActivity = await getVisibleLogFilter();
 
     const url = new URL(req.url);
     const range = url.searchParams.get('range') || '30d'; // today | 7d | 30d | 90d
@@ -126,7 +128,7 @@ export async function GET(req: Request) {
         .select('name phone email rewardPoints createdAt')
         .lean(),
       ActivityEvent.aggregate<{ visitors: number }>([
-        { $match: { type: 'page_view', createdAt: { $gte: start } } },
+        { $match: { ...visibleActivity, type: 'page_view', createdAt: { $gte: start } } },
         { $group: { _id: '$visitorId' } },
         { $count: 'visitors' },
       ]),

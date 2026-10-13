@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     // Clean up used OTP tokens for this email
     await OtpToken.deleteMany({ email: cleanEmail });
 
-    recordServerActivity({ type: 'signup', req, userId: user._id.toString(), userName: user.name, path: '/login' });
+    recordServerActivity({ type: 'signup', req, userId: user._id.toString(), userName: user.name, userRole: user.role, path: '/login' });
 
     const token = signToken({
       userId: user._id.toString(),

@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import BannerImageInput from '@/components/admin/BannerImageInput';
+import { isUnderHeroBanner, UNDER_HERO_RECOMMENDED_SIZE } from '@/lib/homepageBanners';
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [editBanner, setEditBanner] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newBanner, setNewBanner] = useState({
     widget_name: 'custom_banner',
@@ -73,6 +78,12 @@ export default function AdminBannersPage() {
     e.preventDefault();
     if (!editBanner) return;
     const id = editBanner._id || editBanner.id;
+    if ((editBanner.items || []).some((item: any) => !item.image?.trim())) {
+      setSaveError('Every banner item needs an image. Upload one or remove the empty item.');
+      return;
+    }
+    setIsSaving(true);
+    setSaveError(null);
     try {
       const res = await fetch(`/api/admin/banners/${id}`, {
         method: 'PUT',
@@ -89,8 +100,14 @@ export default function AdminBannersPage() {
       if (data.success) {
         setBanners(prev => prev.map(b => (b._id || b.id) === id ? { ...b, ...data.banner } : b));
         setEditBanner(null);
+      } else {
+        setSaveError(data.message || data.error || 'Could not save the banner.');
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      setSaveError('Could not reach the server. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const addItemToEdit = () => {
@@ -118,6 +135,7 @@ export default function AdminBannersPage() {
 
   const widgetTypes = [
     { value: 'hero_slider', label: 'Hero Slider (Homepage Top)' },
+    { value: 'under_hero_banner', label: 'Banner Under Hero (Homepage)' },
     { value: 'deals-cannot-miss', label: 'Deals Section' },
     { value: 'top-brands-offers', label: 'Top Brands & Offers' },
     { value: 'limited-time-offers', label: 'Limited Time Offers' },
@@ -145,17 +163,24 @@ export default function AdminBannersPage() {
         <div className="py-20 text-center text-xs text-gray-400">Loading banner widgets from database...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {banners.map((banner) => {
+          {/* The under-hero slot is listed first so it is easy to find */}
+          {[...banners].sort((a, b) => Number(isUnderHeroBanner(b)) - Number(isUnderHeroBanner(a))).map((banner) => {
             const isActive = banner.isActive !== false;
+            const underHero = isUnderHeroBanner(banner);
             return (
-              <div key={banner._id || banner.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isActive ? 'border-gray-100' : 'border-red-200 opacity-70'}`}>
+              <div key={banner._id || banner.id} className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${isActive ? (underHero ? 'border-sg-pink/40 ring-1 ring-sg-pink/20' : 'border-gray-100') : 'border-red-200 opacity-70'}`}>
                 {/* Banner Header */}
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-gray-900">{banner.title || banner.widget_name}</h3>
+                    {underHero && (
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        The image right under the hero slider on the homepage. {isActive ? 'Live now.' : 'Hidden from the homepage.'}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold uppercase">
-                        {banner.widget_name}
+                        {widgetTypes.find((wt) => wt.value === banner.widget_name)?.label || banner.widget_name}
                       </span>
                       <span className="text-[10px] text-gray-400">{banner.items?.length || 0} items</span>
                       <span className="text-[10px] text-gray-400">• {banner.columns || 1} cols</span>
@@ -194,17 +219,21 @@ export default function AdminBannersPage() {
                 {/* Actions */}
                 <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-between">
                   <button
-                    onClick={() => setEditBanner({ ...banner })}
+                    onClick={() => { setSaveError(null); setEditBanner({ ...banner }); }}
                     className="px-3 py-1.5 bg-white border border-gray-200 hover:border-sg-pink hover:text-sg-pink rounded-lg text-xs font-bold transition-colors"
                   >
-                    ✏️ Edit Banner
+                    {underHero ? '🖼 Change Image' : '✏️ Edit Banner'}
                   </button>
-                  <button
-                    onClick={() => handleDeleteBanner(banner)}
-                    className="px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors"
-                  >
-                    🗑 Delete
-                  </button>
+                  {underHero ? (
+                    <span className="px-3 py-1.5 text-[11px] text-gray-400">Use the switch to hide it</span>
+                  ) : (
+                    <button
+                      onClick={() => handleDeleteBanner(banner)}
+                      className="px-3 py-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs font-bold transition-colors"
+                    >
+                      🗑 Delete
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -258,17 +287,19 @@ export default function AdminBannersPage() {
               </div>
               <div>
                 <label className="block font-bold text-gray-700 mb-1">First Banner Item</label>
-                <input
-                  type="url"
-                  placeholder="Image URL"
-                  value={newBanner.items[0]?.image || ''}
-                  onChange={(e) => {
-                    const items = [...newBanner.items];
-                    items[0] = { ...items[0], image: e.target.value };
-                    setNewBanner({ ...newBanner, items });
-                  }}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-2 focus:outline-none focus:border-sg-pink"
-                />
+                <div className="mb-2">
+                  <BannerImageInput
+                    value={newBanner.items[0]?.image || ''}
+                    onChange={(image) => {
+                      const items = [...newBanner.items];
+                      items[0] = { ...items[0], image };
+                      setNewBanner({ ...newBanner, items });
+                    }}
+                    onBusyChange={setIsUploading}
+                    hint={newBanner.widget_name === 'under_hero_banner' ? `Recommended size: ${UNDER_HERO_RECOMMENDED_SIZE}` : undefined}
+                    inputClassName="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-sg-pink"
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="Link URL (e.g. /shop?brand=ponds)"
@@ -283,7 +314,7 @@ export default function AdminBannersPage() {
               </div>
               <div className="pt-2 flex justify-end gap-2 border-t border-gray-100">
                 <button type="button" onClick={() => setIsCreateOpen(false)} className="px-4 py-2 border rounded-full font-bold text-gray-600">Cancel</button>
-                <button type="submit" className="px-5 py-2 bg-sg-pink text-white rounded-full font-bold">Create Banner</button>
+                <button type="submit" disabled={isUploading} className="px-5 py-2 bg-sg-pink text-white rounded-full font-bold disabled:opacity-50">Create Banner</button>
               </div>
             </form>
           </div>
@@ -305,7 +336,8 @@ export default function AdminBannersPage() {
                   <select
                     value={editBanner.widget_name}
                     onChange={(e) => setEditBanner({ ...editBanner, widget_name: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-sg-pink"
+                    disabled={isUnderHeroBanner(editBanner)}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-sg-pink disabled:opacity-60"
                   >
                     {widgetTypes.map(wt => (
                       <option key={wt.value} value={wt.value}>{wt.label}</option>
@@ -330,7 +362,7 @@ export default function AdminBannersPage() {
                     + Add Item
                   </button>
                 </div>
-                <div className="space-y-3 max-h-60 overflow-y-auto custom-scroll">
+                <div className="space-y-3 max-h-[50vh] overflow-y-auto custom-scroll">
                   {(editBanner.items || []).map((item: any, idx: number) => (
                     <div key={idx} className="p-3 bg-gray-50 rounded-xl space-y-2 relative">
                       <div className="flex items-center justify-between">
@@ -344,12 +376,11 @@ export default function AdminBannersPage() {
                         onChange={(e) => updateEditItem(idx, 'title', e.target.value)}
                         className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sg-pink"
                       />
-                      <input
-                        type="url"
-                        placeholder="Image URL *"
+                      <BannerImageInput
                         value={item.image || ''}
-                        onChange={(e) => updateEditItem(idx, 'image', e.target.value)}
-                        className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sg-pink"
+                        onChange={(image) => updateEditItem(idx, 'image', image)}
+                        onBusyChange={setIsUploading}
+                        hint={isUnderHeroBanner(editBanner) ? `Recommended size: ${UNDER_HERO_RECOMMENDED_SIZE} (wide banner, shown full width)` : undefined}
                       />
                       <input
                         type="text"
@@ -358,19 +389,24 @@ export default function AdminBannersPage() {
                         onChange={(e) => updateEditItem(idx, 'url', e.target.value)}
                         className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sg-pink"
                       />
-                      {item.image && (
-                        <div className="relative w-full h-20 bg-white rounded-lg overflow-hidden border border-gray-100">
-                          <Image src={item.image} alt="" fill className="object-contain" />
-                        </div>
-                      )}
+                      <input
+                        type="text"
+                        placeholder="Image description for accessibility (alt text)"
+                        value={item.alt || ''}
+                        onChange={(e) => updateEditItem(idx, 'alt', e.target.value)}
+                        className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sg-pink"
+                      />
                     </div>
                   ))}
                 </div>
               </div>
 
+              {saveError && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 font-semibold text-rose-700">{saveError}</p>}
               <div className="pt-3 flex justify-end gap-2 border-t border-gray-100">
                 <button type="button" onClick={() => setEditBanner(null)} className="px-4 py-2 border rounded-full font-bold text-gray-600">Cancel</button>
-                <button type="submit" className="px-5 py-2 bg-sg-pink text-white rounded-full font-bold shadow-md">Save Changes</button>
+                <button type="submit" disabled={isUploading || isSaving} className="px-5 py-2 bg-sg-pink text-white rounded-full font-bold shadow-md disabled:opacity-50">
+                  {isUploading ? 'Waiting for upload...' : isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </form>
           </div>

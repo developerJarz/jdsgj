@@ -12,7 +12,11 @@ interface DealsSectionProps {
 export default function DealsSection({ title, items, columns = 4 }: DealsSectionProps) {
   if (!items || items.length === 0) return null;
 
-  const colClasses = columns === 3
+  const colClasses = columns === 1
+    ? 'grid-cols-1'
+    : columns === 2
+    ? 'grid-cols-1 sm:grid-cols-2'
+    : columns === 3
     ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
     : 'grid-cols-2 md:grid-cols-4';
 

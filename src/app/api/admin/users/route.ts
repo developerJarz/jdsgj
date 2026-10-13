@@ -4,17 +4,19 @@ import { User } from '@/models/User';
 import { Order } from '@/models/Order';
 import { authorizeRole } from '@/lib/middleware/withRole';
 import { logAuditEvent } from '@/lib/auditLogger';
+import { getDisabledAdminSections } from '@/lib/adminAccess';
 
 const ASSIGNABLE_ROLES = ['customer', 'moderator', 'admin', 'superadmin'];
 
 export async function GET(req: Request) {
-  const { errorResponse } = await authorizeRole(req, ['admin']);
+  const { user: actor, errorResponse } = await authorizeRole(req, ['admin']);
   if (errorResponse) return errorResponse;
 
   try {
     await connectToDatabase();
+    const staffRestricted = actor?.role === 'admin' && (await getDisabledAdminSections()).includes('staff');
     const [users, orderCounts] = await Promise.all([
-      User.find().select('-password').sort({ createdAt: -1 }).lean(),
+      User.find(staffRestricted ? { role: 'customer' } : { role: { $ne: 'superadmin' } }).select('-password').sort({ createdAt: -1 }).lean(),
       // One aggregate instead of a countDocuments per user
       Order.aggregate<{ _id: string; count: number }>([
         { $group: { _id: '$customer.phone', count: { $sum: 1 } } },
@@ -45,13 +47,19 @@ export async function PUT(req: Request) {
     if (role === 'superadmin' && actor.role !== 'superadmin') {
       return NextResponse.json({ success: false, message: 'Only a superadmin can grant superadmin' }, { status: 403 });
     }
-    if (userId === actor.userId && role && role !== actor.role) {
-      return NextResponse.json({ success: false, message: 'You cannot change your own role' }, { status: 400 });
+    if (isActive !== undefined && typeof isActive !== 'boolean') {
+      return NextResponse.json({ success: false, message: 'isActive must be a boolean' }, { status: 400 });
     }
 
     const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    }
+    if (user._id.toString() === actor.userId && ((role && role !== actor.role) || isActive === false)) {
+      return NextResponse.json({ success: false, message: 'You cannot change your own role or suspend your own account' }, { status: 400 });
+    }
+    if (actor.role === 'admin' && (user.role !== 'customer' || (role && role !== 'customer')) && (await getDisabledAdminSections()).includes('staff')) {
+      return NextResponse.json({ success: false, message: 'Staff management has been disabled by the super admin' }, { status: 403 });
     }
     if (user.role === 'superadmin' && actor.role !== 'superadmin') {
       return NextResponse.json({ success: false, message: 'Only a superadmin can modify a superadmin' }, { status: 403 });

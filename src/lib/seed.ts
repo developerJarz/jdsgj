@@ -5,6 +5,7 @@ import { Banner } from '@/models/Banner';
 import productsData from '@/data/products.json';
 import categoriesData from '@/data/categories.json';
 import bannersData from '@/data/banners.json';
+import { UNDER_HERO_BANNER } from '@/lib/homepageBanners';
 
 export async function ensureDatabaseSeeded(force: boolean = false) {
   await connectToDatabase();
@@ -32,4 +33,15 @@ export async function ensureDatabaseSeeded(force: boolean = false) {
     await Banner.insertMany(bannersData);
     console.log(`✅ Seeded ${bannersData.length} banner sections`);
   }
+}
+
+/** Creates the under-hero banner slot once, so admins can edit it. Returns true if it was just created. */
+export async function ensureUnderHeroBanner(): Promise<boolean> {
+  await connectToDatabase();
+  const result = await Banner.updateOne(
+    { $or: [{ id: UNDER_HERO_BANNER.id }, { widget_name: UNDER_HERO_BANNER.widget_name }] },
+    { $setOnInsert: UNDER_HERO_BANNER },
+    { upsert: true },
+  );
+  return result.upsertedCount > 0;
 }

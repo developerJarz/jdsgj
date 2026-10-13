@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/db';
 import { getTokenFromRequest, verifyToken } from '@/lib/auth';
 import { detectDevice, isLikelyBot } from '@/lib/activity';
 import ActivityEvent, { ActivityType } from '@/models/ActivityEvent';
+import User from '@/models/User';
 
 // Only client-originated events are accepted here. order_placed, login and
 // signup are recorded server-side so they can't be spoofed from the browser.
@@ -49,7 +50,9 @@ export async function POST(req: Request) {
   after(async () => {
     try {
       await connectToDatabase();
-      await ActivityEvent.create(event);
+      // A user can be promoted while still using an older login token.
+      const actor = event.user ? await User.findById(event.user).select('role').lean() : null;
+      await ActivityEvent.create({ ...event, userRole: actor?.role ?? session?.role });
     } catch (err) {
       console.warn('Track event failed:', (err as Error).message);
     }

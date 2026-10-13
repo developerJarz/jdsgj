@@ -36,15 +36,15 @@ const defaultSlides: HeroSlide[] = [
   }
 ];
 
-export default function HeroSlider({ slides = defaultSlides }: { slides?: HeroSlide[] }) {
+export default function HeroSlider({ slides = defaultSlides, interval = 4.5 }: { slides?: HeroSlide[]; interval?: number }) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent(prev => (prev + 1) % slides.length);
-    }, 4500);
+    }, interval * 1000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides.length, interval]);
 
   return (
     <div className="relative w-full overflow-hidden bg-gray-100">

@@ -2,6 +2,7 @@ import { after } from 'next/server';
 import mongoose from 'mongoose';
 import { connectToDatabase } from '@/lib/db';
 import ActivityEvent, { ActivityType } from '@/models/ActivityEvent';
+import type { UserTokenPayload } from '@/lib/auth';
 
 export function detectDevice(userAgent: string | null): 'mobile' | 'tablet' | 'desktop' {
   const ua = (userAgent || '').toLowerCase();
@@ -19,6 +20,7 @@ interface ServerActivity {
   req?: Request;
   userId?: string;
   userName?: string;
+  userRole?: UserTokenPayload['role'];
   path?: string;
   value?: number;
   productId?: string;
@@ -29,7 +31,7 @@ interface ServerActivity {
  * Records a server-side activity event (order placed, login, signup) after the
  * response has been sent, so it never slows the user down or breaks the flow.
  */
-export function recordServerActivity({ type, req, userId, userName, path, value, productId, productName }: ServerActivity) {
+export function recordServerActivity({ type, req, userId, userName, userRole, path, value, productId, productName }: ServerActivity) {
   const userAgent = req?.headers.get('user-agent') ?? null;
 
   after(async () => {
@@ -43,6 +45,7 @@ export function recordServerActivity({ type, req, userId, userName, path, value,
         productName,
         user: userId && mongoose.Types.ObjectId.isValid(userId) ? userId : undefined,
         userName,
+        userRole,
         device: detectDevice(userAgent),
       });
     } catch (err) {

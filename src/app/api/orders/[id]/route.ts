@@ -13,6 +13,10 @@ interface RouteParams {
 }
 
 export async function GET(req: Request, { params }: RouteParams) {
+  // Orders include customer contact details; customers read their own through /api/account/orders.
+  const { errorResponse } = await authorizeRole(req, ['admin', 'moderator']);
+  if (errorResponse) return errorResponse;
+
   try {
     await connectToDatabase();
     const resolvedParams = await params;

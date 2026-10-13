@@ -263,7 +263,7 @@ function MegaColumns({ item, onNavigate }: { item: NavMenuItem; onNavigate: () =
   );
 }
 
-export default function Header({ navData }: { navData: NavData }) {
+export default function Header({ navData, topBar }: { navData: NavData; topBar?: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { totalItems, openCart } = useCart();
@@ -359,10 +359,8 @@ export default function Header({ navData }: { navData: NavData }) {
 
   return (
     <header className="hidden lg:block sticky top-0 z-[100] bg-white nav-box">
-      {/* Top Banner Notice */}
-      <div className="bg-sg-black text-white text-[11px] py-1.5 text-center font-medium tracking-wide">
-        <span>100% Authentic Beauty Products • Nationwide Delivery in Bangladesh • Hotline: 09613-222333</span>
-      </div>
+      {/* Top Banner Notice (Admin → Page Layout Sections → Announcement bar) */}
+      {topBar}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Desktop Bar */}

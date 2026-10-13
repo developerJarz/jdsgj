@@ -2,10 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import DataTable, { Column } from '@/components/admin/DataTable';
+import { useAdminAccess } from '@/context/AdminAccessContext';
+import { AUDIT_RETENTION_OPTIONS } from '@/lib/auditRetention';
 
 export default function AdminAuditLogPage() {
+  const { access } = useAdminAccess();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [months, setMonths] = useState<number>(AUDIT_RETENTION_OPTIONS[AUDIT_RETENTION_OPTIONS.length - 1]);
+  const [deleting, setDeleting] = useState(false);
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
 
   const loadLogs = async () => {
     setLoading(true);
@@ -25,6 +31,27 @@ export default function AdminAuditLogPage() {
   useEffect(() => {
     loadLogs();
   }, []);
+
+  const deleteOldLogs = async () => {
+    if (!confirm(`Permanently delete audit entries older than ${months} month${months > 1 ? 's' : ''}? This cannot be undone.`)) return;
+    setDeleting(true);
+    setNotice(null);
+    try {
+      const res = await fetch('/api/admin/audit-log', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ months }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Could not delete audit entries.');
+      setNotice({ ok: true, text: `Deleted ${json.deletedCount} audit entr${json.deletedCount === 1 ? 'y' : 'ies'}.` });
+      await loadLogs();
+    } catch (e) {
+      setNotice({ ok: false, text: e instanceof Error ? e.message : 'Could not delete audit entries.' });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const columns: Column<any>[] = [
     {
@@ -89,13 +116,44 @@ export default function AdminAuditLogPage() {
             Immutable chronicle of administrative changes, status updates, and entity mutations
           </p>
         </div>
-        <button
-          onClick={loadLogs}
-          className="px-3.5 py-2 bg-white border border-gray-200 text-gray-700 font-bold text-xs rounded-xl shadow-xs hover:bg-gray-50 flex items-center gap-1.5 transition-all"
-        >
-          <span>🔄 Refresh Logs</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {access.canDeleteAuditLogs && (
+            <>
+              <label htmlFor="audit-retention" className="sr-only">Delete entries older than</label>
+              <select
+                id="audit-retention"
+                value={months}
+                onChange={(e) => setMonths(Number(e.target.value))}
+                disabled={deleting}
+                className="px-3 py-2 bg-white border border-gray-200 text-gray-700 font-bold text-xs rounded-xl"
+              >
+                {AUDIT_RETENTION_OPTIONS.map((m) => (
+                  <option key={m} value={m}>Older than {m} month{m > 1 ? 's' : ''}</option>
+                ))}
+              </select>
+              <button
+                onClick={deleteOldLogs}
+                disabled={deleting}
+                className="px-3.5 py-2 bg-rose-50 border border-rose-200 text-rose-700 font-bold text-xs rounded-xl hover:bg-rose-100 disabled:opacity-50 transition-all"
+              >
+                {deleting ? 'Deleting...' : 'Delete old entries'}
+              </button>
+            </>
+          )}
+          <button
+            onClick={loadLogs}
+            className="px-3.5 py-2 bg-white border border-gray-200 text-gray-700 font-bold text-xs rounded-xl shadow-xs hover:bg-gray-50 flex items-center gap-1.5 transition-all"
+          >
+            <span>🔄 Refresh Logs</span>
+          </button>
+        </div>
       </div>
+
+      {notice && (
+        <p role="status" className={`rounded-xl border p-3 text-xs font-semibold ${notice.ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-rose-200 bg-rose-50 text-rose-800'}`}>
+          {notice.text}
+        </p>
+      )}
 
       <DataTable
         columns={columns}

@@ -1,322 +1,189 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import DataTable, { Column } from '@/components/admin/DataTable';
-import Modal from '@/components/admin/Modal';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import type { SiteContent } from '@/lib/siteContent';
+import SectionsEditor, { type LookupData } from '@/components/admin/layout-editor/SectionsEditor';
+import AnnouncementEditor from '@/components/admin/layout-editor/AnnouncementEditor';
+import FooterEditor from '@/components/admin/layout-editor/FooterEditor';
+
+type Tab = 'sections' | 'announcement' | 'footer';
+const TABS: { id: Tab; label: string; description: string }[] = [
+  { id: 'sections', label: 'Homepage sections', description: 'Order, show/hide and customize every homepage block' },
+  { id: 'announcement', label: 'Top announcement bar', description: 'The message strip above the header' },
+  { id: 'footer', label: 'Footer', description: 'Footer text, links and blocks' },
+];
 
 export default function AdminPageSectionsPage() {
-  const [sections, setSections] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    title: '',
-    subtitle: '',
-    section_type: 'product_slider',
-    order: 0,
-    isActive: true,
-  });
+  const [tab, setTab] = useState<Tab>('sections');
+  const [content, setContent] = useState<SiteContent | null>(null);
+  const [saved, setSaved] = useState<SiteContent | null>(null);
+  const [defaults, setDefaults] = useState<SiteContent | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [lookups, setLookups] = useState<LookupData>({ banners: [], categories: [], brands: [] });
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const loadSections = async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
+    setLoadError(null);
     try {
-      const res = await fetch('/api/admin/page-sections?page=home');
+      const res = await fetch('/api/admin/page-sections', { cache: 'no-store' });
       const json = await res.json();
-      if (json.success) {
-        setSections(json.sections || []);
-      }
+      if (!res.ok || !json.success) throw new Error(json.error || 'Could not load the layout settings.');
+      setContent(json.content);
+      setSaved(json.content);
+      setDefaults(json.defaults);
+      setUpdatedAt(json.updatedAt);
     } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+      setLoadError(e instanceof Error ? e.message : 'Could not load the layout settings.');
     }
-  };
-
-  useEffect(() => {
-    loadSections();
   }, []);
 
-  const openCreate = () => {
-    setEditingSection(null);
-    setFormData({
-      title: '',
-      subtitle: '',
-      section_type: 'product_slider',
-      order: sections.length + 1,
-      isActive: true,
+  useEffect(() => {
+    void load();
+    // Dropdown data; each list is optional, so failures just leave it empty.
+    Promise.allSettled([
+      fetch('/api/admin/banners').then((r) => r.json()),
+      fetch('/api/admin/categories').then((r) => r.json()),
+      fetch('/api/admin/brands').then((r) => r.json()),
+    ]).then(([banners, categories, brands]) => {
+      setLookups({
+        banners: banners.status === 'fulfilled' && Array.isArray(banners.value)
+          ? banners.value.map((b: any) => ({ id: String(b.id), title: b.title || b.widget_name, items: b.items?.length ?? 0, active: b.isActive !== false }))
+          : [],
+        categories: categories.status === 'fulfilled' && Array.isArray(categories.value)
+          ? categories.value.map((c: any) => ({ slug: c.slug, name: c.name }))
+          : [],
+        brands: brands.status === 'fulfilled' && Array.isArray(brands.value?.brands)
+          ? brands.value.brands.map((b: any) => ({ slug: b.slug, name: b.name }))
+          : [],
+      });
     });
-    setIsModalOpen(true);
+  }, [load]);
+
+  const changed = useMemo(() => JSON.stringify(content) !== JSON.stringify(saved), [content, saved]);
+
+  useEffect(() => {
+    if (!changed) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [changed]);
+
+  const update = <K extends keyof SiteContent>(key: K, value: SiteContent[K]) => {
+    setContent((current) => (current ? { ...current, [key]: value } : current));
+    setMessage(null);
+    setSaveError(null);
   };
 
-  const openEdit = (sec: any) => {
-    setEditingSection(sec);
-    setFormData({
-      title: sec.title,
-      subtitle: sec.subtitle || '',
-      section_type: sec.section_type,
-      order: sec.order || 0,
-      isActive: sec.isActive !== false,
-    });
-    setIsModalOpen(true);
-  };
-
-  const moveOrder = async (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= sections.length) return;
-
-    const newSections = [...sections];
-    const temp = newSections[index];
-    newSections[index] = newSections[targetIndex];
-    newSections[targetIndex] = temp;
-
-    // re-assign orders
-    const updated = newSections.map((sec, idx) => ({
-      _id: sec._id,
-      order: idx + 1,
-    }));
-
-    setSections(newSections);
-
+  const save = async () => {
+    if (!content) return;
+    setSaving(true);
+    setSaveError(null);
+    setMessage(null);
     try {
-      await fetch('/api/admin/page-sections', {
+      const res = await fetch('/api/admin/page-sections', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reorder: true, sections: updated }),
+        body: JSON.stringify({ content }),
       });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.error || 'Could not save your changes.');
+      setContent(json.content);
+      setSaved(json.content);
+      setUpdatedAt(json.updatedAt);
+      setMessage('Saved. The live storefront now shows these changes.');
     } catch (e) {
-      loadSections();
+      setSaveError(e instanceof Error ? e.message : 'Could not save your changes.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const url = '/api/admin/page-sections';
-      const method = editingSection ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...(editingSection && { id: editingSection._id }),
-          ...formData,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setIsModalOpen(false);
-        loadSections();
-      } else {
-        alert(data.message || 'Operation failed');
-      }
-    } catch (e) {
-      alert('Network error');
-    }
+  const resetTab = () => {
+    if (!defaults || !content) return;
+    const key = tab === 'sections' ? 'homeSections' : tab;
+    if (!confirm(`Reset the ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} to the original design? You can still discard before saving.`)) return;
+    update(key, defaults[key]);
   };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this section?')) return;
-    try {
-      const res = await fetch(`/api/admin/page-sections?id=${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        loadSections();
-      }
-    } catch (e) {
-      alert('Delete failed');
-    }
-  };
-
-  const columns: Column<any>[] = [
-    {
-      header: 'Position',
-      accessor: 'order',
-      render: (row, rowIdx = 0) => (
-        <div className="flex items-center gap-1.5">
-          <span className="w-6 h-6 rounded-lg bg-gray-100 font-black text-xs text-gray-700 flex items-center justify-center">
-            {row.order}
-          </span>
-          <div className="flex flex-col gap-0.5">
-            <button
-              onClick={() => moveOrder(sections.indexOf(row), 'up')}
-              className="text-[9px] px-1 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 leading-none"
-            >
-              ▲
-            </button>
-            <button
-              onClick={() => moveOrder(sections.indexOf(row), 'down')}
-              className="text-[9px] px-1 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 leading-none"
-            >
-              ▼
-            </button>
-          </div>
-        </div>
-      ),
-    },
-    {
-      header: 'Section Title',
-      accessor: 'title',
-      render: (row) => (
-        <div>
-          <p className="font-bold text-gray-900 text-xs">{row.title}</p>
-          {row.subtitle && <p className="text-[11px] text-gray-400">{row.subtitle}</p>}
-        </div>
-      ),
-    },
-    {
-      header: 'Layout Type',
-      accessor: 'section_type',
-      render: (row) => (
-        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-          {row.section_type.replace(/_/g, ' ')}
-        </span>
-      ),
-    },
-    {
-      header: 'Status',
-      accessor: 'isActive',
-      render: (row) => (
-        <span
-          className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-            row.isActive !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          {row.isActive !== false ? 'Visible' : 'Hidden'}
-        </span>
-      ),
-    },
-    {
-      header: 'Actions',
-      className: 'text-right',
-      render: (row) => (
-        <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={() => openEdit(row)}
-            className="px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleDelete(row._id)}
-            className="px-2.5 py-1 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-          >
-            Delete
-          </button>
-        </div>
-      ),
-    },
-  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 pb-28">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Homepage Section Layout</h1>
-          <p className="text-xs text-gray-500 mt-1">
-            Reorder and customize storefront blocks: sliders, category circles, and flash sales
-          </p>
+          <h1 className="text-2xl font-black tracking-tight text-gray-900">Homepage &amp; Site Layout</h1>
+          <p className="mt-1 text-xs text-gray-500">Arrange the homepage and edit the announcement bar and footer. Changes go live when you save.</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 bg-gradient-to-r from-sg-pink to-[#ff6b8b] hover:from-[#d10057] hover:to-[#e65a78] text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 transition-all"
-        >
-          <span>+ Add Layout Section</span>
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/banners" className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:border-sg-pink hover:text-sg-pink">Manage banner images</Link>
+          <Link href="/" target="_blank" className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-700">View storefront ↗</Link>
+        </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={sections}
-        loading={loading}
-        searchKey="title"
-        searchPlaceholder="Search sections..."
-      />
+      <div role="tablist" aria-label="Layout areas" className="grid gap-2 sm:grid-cols-3">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            type="button"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`rounded-2xl border p-3 text-left transition-colors ${tab === t.id ? 'border-sg-pink bg-pink-50/60' : 'border-gray-100 bg-white hover:border-gray-300'}`}
+          >
+            <p className={`text-xs font-bold ${tab === t.id ? 'text-sg-pink' : 'text-gray-900'}`}>{t.label}</p>
+            <p className="mt-0.5 text-[11px] text-gray-500">{t.description}</p>
+          </button>
+        ))}
+      </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingSection ? 'Edit Section' : 'Create Section'}
-      >
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          <div>
-            <label className="block font-bold text-gray-700 mb-1">Section Title *</label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Best Selling Skincare Deals"
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sg-pink/30 focus:border-sg-pink outline-none"
+      {loadError && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+          <span>{loadError}</span>
+          <button type="button" onClick={() => void load()} className="rounded-lg bg-white px-3 py-1.5 font-bold">Try again</button>
+        </div>
+      )}
+
+      {!content && !loadError && <div role="status" className="rounded-2xl border border-gray-100 bg-white p-12 text-center text-xs text-gray-400">Loading layout settings…</div>}
+
+      {content && (
+        <div role="tabpanel">
+          {tab === 'sections' && (
+            <SectionsEditor
+              sections={content.homeSections}
+              onChange={(homeSections) => update('homeSections', homeSections)}
+              lookups={lookups}
+              announcement={content.announcement}
+              footer={content.footer}
             />
-          </div>
+          )}
+          {tab === 'announcement' && <AnnouncementEditor value={content.announcement} onChange={(announcement) => update('announcement', announcement)} />}
+          {tab === 'footer' && <FooterEditor value={content.footer} onChange={(footer) => update('footer', footer)} />}
+        </div>
+      )}
 
-          <div>
-            <label className="block font-bold text-gray-700 mb-1">Subtitle</label>
-            <input
-              type="text"
-              value={formData.subtitle}
-              onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-              placeholder="e.g. Handpicked premium recommendations for glowing skin"
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sg-pink/30 focus:border-sg-pink outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block font-bold text-gray-700 mb-1">Section Type</label>
-              <select
-                value={formData.section_type}
-                onChange={(e) => setFormData({ ...formData, section_type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sg-pink/30 focus:border-sg-pink outline-none bg-white"
-              >
-                <option value="banner_carousel">Banner Slider (Hero)</option>
-                <option value="categories_grid">Categories Grid</option>
-                <option value="product_slider">Product Carousel Slider</option>
-                <option value="flash_sale">Flash Sale Countdown</option>
-                <option value="two_column_banner">Twin Promotional Banners</option>
-              </select>
+      {content && (
+        <div className="fixed inset-x-4 bottom-4 z-40 lg:left-72">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white p-3 shadow-lg sm:p-4">
+            <div className="min-w-0">
+              {saveError ? <p role="alert" className="text-xs font-bold text-rose-700">{saveError}</p>
+                : message ? <p role="status" className="text-xs font-bold text-emerald-700">{message}</p>
+                : <p className="text-xs font-bold text-gray-900">{changed ? 'You have unsaved changes' : 'All changes saved'}</p>}
+              <p className="mt-0.5 text-[10px] text-gray-500">
+                {updatedAt ? `Last saved ${new Date(updatedAt).toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' })} (Dhaka)` : 'Showing the original design. Save to start customizing.'}
+              </p>
             </div>
-            <div>
-              <label className="block font-bold text-gray-700 mb-1">Display Order</label>
-              <input
-                type="number"
-                value={formData.order}
-                onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sg-pink/30 focus:border-sg-pink outline-none"
-              />
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={resetTab} disabled={saving} className="rounded-xl px-3 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 disabled:opacity-40">Reset this tab</button>
+              <button type="button" onClick={() => { setContent(saved); setSaveError(null); setMessage(null); }} disabled={!changed || saving} className="rounded-xl px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-40">Discard</button>
+              <button type="button" onClick={save} disabled={!changed || saving} className="rounded-xl bg-sg-pink px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-sg-pink-hover disabled:opacity-40">
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
             </div>
           </div>
-
-          <div>
-            <label className="block font-bold text-gray-700 mb-1">Visibility</label>
-            <select
-              value={formData.isActive ? 'true' : 'false'}
-              onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sg-pink/30 focus:border-sg-pink outline-none bg-white"
-            >
-              <option value="true">Visible on Homepage</option>
-              <option value="false">Hidden / Disabled</option>
-            </select>
-          </div>
-
-          <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 font-bold hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-gradient-to-r from-sg-pink to-[#ff6b8b] text-white font-bold rounded-xl shadow-sm hover:brightness-105"
-            >
-              {editingSection ? 'Update Section' : 'Add Section'}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,8 +5,10 @@ import DataTable, { Column } from '@/components/admin/DataTable';
 import Modal from '@/components/admin/Modal';
 import StatusBadge from '@/components/admin/StatusBadge';
 import { PERMISSION_GROUPS } from '@/lib/permissions';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AdminStaffPage() {
+  const { user } = useAuth();
   const [staff, setStaff] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -187,6 +189,7 @@ export default function AdminStaffPage() {
         <div className="flex items-center justify-end gap-2">
           <button
             onClick={() => openEdit(row)}
+            disabled={row.role === 'superadmin' && user?.role !== 'superadmin'}
             className="px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
           >
             Edit
@@ -294,7 +297,8 @@ export default function AdminStaffPage() {
                 className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-sg-pink/30 focus:border-sg-pink outline-none bg-white font-semibold"
               >
                 <option value="moderator">Moderator (Restricted Access)</option>
-                <option value="admin">Administrator (Full Access)</option>
+                <option value="admin">Administrator</option>
+                {user?.role === 'superadmin' && <option value="superadmin">Super Administrator</option>}
               </select>
             </div>
             <div>

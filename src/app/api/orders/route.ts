@@ -172,6 +172,7 @@ export async function POST(req: Request) {
       type: 'order_placed',
       req,
       userId: userRecord?._id?.toString(),
+      userRole: userRecord?.role,
       userName: customer.fullName,
       path: '/checkout',
       value: cleanGrandTotal,

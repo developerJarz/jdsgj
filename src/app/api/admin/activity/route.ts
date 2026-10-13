@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import ActivityEvent from '@/models/ActivityEvent';
 import AuditLog from '@/models/AuditLog';
 import { authorizeRole } from '@/lib/middleware/withRole';
+import { getVisibleLogFilter } from '@/lib/logVisibility';
 
 const TZ = 'Asia/Dhaka';
 const DAY_MS = 86_400_000;
@@ -27,7 +28,8 @@ export async function GET(req: Request) {
     const range = url.searchParams.get('range') || 'today';
     const now = new Date();
     const start = rangeStart(range, now);
-    const inRange = { createdAt: { $gte: start } };
+    const visibleLogs = await getVisibleLogFilter();
+    const inRange = { ...visibleLogs, createdAt: { $gte: start } };
     const hourly = range === 'today';
 
     const [
@@ -75,7 +77,7 @@ export async function GET(req: Request) {
         { $project: { sessions: { $size: '$sessions' } } },
       ]),
       ActivityEvent.aggregate([
-        { $match: { createdAt: { $gte: new Date(now.getTime() - LIVE_WINDOW_MS) }, visitorId: { $exists: true } } },
+        { $match: { ...visibleLogs, createdAt: { $gte: new Date(now.getTime() - LIVE_WINDOW_MS) }, visitorId: { $exists: true } } },
         { $group: { _id: '$visitorId', path: { $last: '$path' } } },
         { $group: { _id: null, count: { $sum: 1 }, paths: { $push: '$path' } } },
       ]),
@@ -122,12 +124,12 @@ export async function GET(req: Request) {
         },
         { $project: { views: 1, visitors: { $size: '$visitors' } } },
       ]),
-      ActivityEvent.find({ type: { $ne: 'page_view' } })
+      ActivityEvent.find({ ...visibleLogs, type: { $ne: 'page_view' } })
         .sort({ createdAt: -1 })
         .limit(40)
         .select('type path productName query value userName device createdAt')
         .lean(),
-      AuditLog.find()
+      AuditLog.find(visibleLogs)
         .sort({ createdAt: -1 })
         .limit(10)
         .select('userName userRole action target details createdAt')

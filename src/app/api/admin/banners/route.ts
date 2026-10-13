@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { Banner } from '@/models/Banner';
-import { ensureDatabaseSeeded } from '@/lib/seed';
+import { ensureDatabaseSeeded, ensureUnderHeroBanner } from '@/lib/seed';
 import mongoose from 'mongoose';
 import { authorizeRole } from '@/lib/middleware/withRole';
 import { logAuditEvent } from '@/lib/auditLogger';
@@ -11,6 +11,7 @@ export async function GET() {
   try {
     await connectToDatabase();
     await ensureDatabaseSeeded();
+    if (await ensureUnderHeroBanner()) invalidateStorefront('banners');
     const banners = await Banner.find().sort({ order: 1 }).lean();
     return NextResponse.json(banners);
   } catch (err: any) {

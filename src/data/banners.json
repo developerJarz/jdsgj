@@ -29,6 +29,21 @@
     ]
   },
   {
+    "id": "under-hero-banner",
+    "widget_name": "under_hero_banner",
+    "title": "Banner Under Hero",
+    "columns": 1,
+    "items": [
+      {
+        "id": 1,
+        "title": "Pond's Miracle Prime",
+        "image": "https://bk.shajgoj.com/storage/2026/08/prime-banner-ponds-miracle-me-web.png",
+        "url": "/shop?brand=ponds",
+        "alt": "Ponds Miracle Prime Banner"
+      }
+    ]
+  },
+  {
     "id": "deals-cannot-miss",
     "widget_name": "multi_columns",
     "title": "DEALS YOU CANNOT MISS",

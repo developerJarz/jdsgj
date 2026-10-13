@@ -32,6 +32,13 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, phone, email, password, role, permissions } = body;
 
+    if (role && !['moderator', 'admin', 'superadmin'].includes(role)) {
+      return NextResponse.json({ success: false, message: 'Invalid staff role' }, { status: 400 });
+    }
+    if (role === 'superadmin' && user?.role !== 'superadmin') {
+      return NextResponse.json({ success: false, message: 'Only a superadmin can grant superadmin access' }, { status: 403 });
+    }
+
     if (!name || !phone || !password) {
       return NextResponse.json(
         { success: false, message: 'Name, phone, and password are required' },
